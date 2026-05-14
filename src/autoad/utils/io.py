@@ -44,7 +44,7 @@ RUNS_DIR = REPO_ROOT / "runs"
 def git_sha(short: bool = False) -> str:
     """Return current HEAD SHA, or ``'nogit'`` if not in a repo."""
     try:
-        cmd = ["git", "rev-parse", "--short" if short else "HEAD"]
+        cmd = ["git", "rev-parse", "--short", "HEAD"] if short else ["git", "rev-parse", "HEAD"]
         out = subprocess.run(
             cmd, capture_output=True, text=True, cwd=REPO_ROOT, timeout=5, check=True
         )

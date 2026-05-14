@@ -29,13 +29,13 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Project artifacts
-data/
-datasets/
-checkpoints/
-results/
-runs/
-logs/
+# Project artifacts (anchored to root; src/autoad/data is source code)
+/data/
+/datasets/
+/checkpoints/
+/results/
+/runs/
+/logs/
 *.log
 *.pt
 *.pth
