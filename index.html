@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Leave-Cluster-Out: Multi-Source Pseudo-Anomaly Validation for Unsupervised Time-Series Anomaly Detection Model Selection</title>
+<style>
+  :root {
+    --sim: #c80000;
+    --ink: #1a1a1a;
+    --muted: #555;
+    --rule: #ccc;
+    --soft: #f7f7f9;
+    --accent: #234;
+    --hl: #fff7d6;
+  }
+  body {
+    font-family: "Times New Roman", Times, "Liberation Serif", serif;
+    color: var(--ink);
+    max-width: 980px;
+    margin: 2em auto;
+    padding: 0 1.4em;
+    line-height: 1.55;
+    font-size: 15px;
+    background: white;
+  }
+  h1 { font-size: 1.6em; text-align: center; margin-top: 0.4em; line-height: 1.25; }
+  h2 { font-size: 1.18em; border-bottom: 1px solid var(--rule); padding-bottom: 4px; margin-top: 1.6em; }
+  h3 { font-size: 1.04em; margin-top: 1.2em; color: var(--accent); }
+  h4 { font-size: 0.98em; margin-top: 0.9em; color: var(--accent); font-style: italic; }
+  .authors { text-align: center; font-style: italic; margin: 0.3em 0 1em; color: var(--muted); }
+  .abstract {
+    background: var(--soft);
+    padding: 0.9em 1.1em;
+    border-left: 3px solid var(--accent);
+    margin: 1.3em 0;
+    font-size: 0.96em;
+  }
+  .abstract strong { letter-spacing: 0.05em; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0.9em 0;
+    font-size: 0.92em;
+  }
+  th, td {
+    padding: 5px 9px;
+    border: 1px solid #b8b8b8;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #e9ecef; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .caption {
+    font-size: 0.88em;
+    font-style: italic;
+    color: var(--muted);
+    margin: 4px 0 0;
+  }
+  .figbox { margin: 1.4em 0; text-align: center; }
+  .figbox svg { max-width: 100%; height: auto; }
+  .sim, .sim *, td.sim, span.sim { color: var(--sim) !important; }
+  .sim-banner {
+    background: #fff5f5;
+    border: 2px dashed var(--sim);
+    color: var(--sim);
+    padding: 0.6em 1em;
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.95em;
+    margin: 0.4em 0 1.2em;
+    letter-spacing: 0.04em;
+  }
+  .theorem {
+    background: #f5f7fc;
+    border-left: 3px solid #3a4a8a;
+    padding: 0.7em 1em;
+    margin: 1em 0;
+    font-size: 0.96em;
+  }
+  .theorem .label { font-weight: bold; color: #3a4a8a; }
+  .proof { font-size: 0.93em; color: #333; margin-left: 0.6em; }
+  code, .mono {
+    font-family: "Consolas", "Courier New", monospace;
+    background: #f0f0f0;
+    padding: 1px 4px;
+    font-size: 0.9em;
+  }
+  .refs ol { padding-left: 1.4em; }
+  .refs li { margin-bottom: 6px; font-size: 0.9em; }
+  .toc {
+    background: var(--soft);
+    border: 1px solid var(--rule);
+    padding: 0.5em 1em;
+    margin: 1em 0 1.5em;
+    font-size: 0.92em;
+  }
+  .toc ol { margin: 0.3em 0; }
+  .heatcell {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.85em;
+    padding: 6px 4px;
+  }
+  .footnote { font-size: 0.85em; color: var(--muted); }
+  .key-takeaway {
+    background: var(--hl);
+    border-left: 3px solid #ba9b00;
+    padding: 0.5em 0.9em;
+    margin: 0.7em 0;
+    font-size: 0.95em;
+  }
+</style>
+</head>
+<body>
+
+<div class="sim-banner">
+  BLUEPRINT DOCUMENT. ALL NUMERICAL RESULTS BELOW ARE SIMULATED (DISPLAYED IN RED). NO REAL EXPERIMENTS HAVE BEEN RUN. NUMBERS REPRESENT TARGET OUTCOMES CONSISTENT WITH THE SUCCESS GATES IN <code>implementation plan.md</code> SECTION 13.
+</div>
+
+<h1>Leave-Cluster-Out: Multi-Source Pseudo-Anomaly Validation for Unsupervised Time-Series Anomaly Detection Model Selection</h1>
+<p class="authors">Anonymous Submission &nbsp;|&nbsp; Blueprint Draft, May 2026</p>
+
+<div class="abstract">
+<strong>Abstract.</strong>
+Selecting anomaly detection (AD) models without labeled anomalies remains a central methodological gap. Existing surveys report that internal performance measures (IPMs) are statistically indistinguishable from random selection [Ma &amp; Zhao, 2023], while the strongest known unsupervised time-series selector (Goswami et al., ICLR 2023) relies on a single family of synthetic injections and heuristic rank aggregation. We introduce <strong>MS-PAS</strong> (Multi-Source Pseudo-Anomaly Selection), a normal-data-only protocol that (i) introduces <strong>Leave-Cluster-Out (LCO)</strong> validation, where held-out normal subdomains serve as mode-exclusion pseudo-anomalies at multiple granularities and clustering algorithms, (ii) aggregates LCO with six structured synthetic perturbation families and a prediction-residual signal via an <strong>anomaly-type-aware</strong> rank-fusion combiner, and (iii) carries a selection-regret bound under a manifold-margin condition. On a 790-series benchmark spanning TSB-UAD, the UCR Anomaly Archive, multivariate sensor data, and a controlled synthetic suite of six anomaly types, MS-PAS reduces mean VUS-PR selection regret to <span class="sim">0.043</span> against an oracle, beating Goswami et al. (<span class="sim">0.076</span>), N-1 Experts (<span class="sim">0.082</span>), Idan ECAI 2024 (<span class="sim">0.089</span>), IREOS-fast (<span class="sim">0.094</span>), and ASOI (<span class="sim">0.103</span>) by <span class="sim">0.033&ndash;0.060</span> absolute (paired bootstrap p&lt;<span class="sim">0.01</span> in all cases). The gap to the meta-supervised upper-reference MSAD (PVLDB 2023) is <span class="sim">0.005</span> despite MS-PAS using no historical labels. We characterize failure modes (contextual anomalies are hardest; LCO dominates for mode-exclusion and shift) and release a reproducible 60-candidate, 790-series evaluation package.
+</div>
+
+<div class="toc">
+<strong>Contents.</strong>
+<ol>
+  <li>Introduction</li>
+  <li>Related Work</li>
+  <li>Problem Setup and Notation</li>
+  <li>Method: MS-PAS</li>
+  <li>Theoretical Analysis</li>
+  <li>Experimental Protocol</li>
+  <li>Main Results</li>
+  <li>Ablations and Failure-Mode Analysis</li>
+  <li>Discussion</li>
+  <li>Limitations and Broader Impact</li>
+  <li>Conclusion</li>
+  <li>References</li>
+  <li>Appendix A: Implementation Details</li>
+</ol>
+</div>
+
+<!-- ========================================================== -->
+<h2>1. Introduction</h2>
+
+<p>Anomaly detection (AD) is widely deployed in contexts where labeled anomalies are unavailable, scarce, or unrepresentative of the failures the deployed system will face: industrial sensor monitoring, predictive maintenance, server telemetry, biomedical signals, fraud detection, and cybersecurity. In each of these domains a practitioner can train dozens of plausible AD models on normal data but has no obvious way to pick the best one. Selecting the wrong model is not benign: across the TSB-UAD benchmark, the gap between the best and median model on a single time series can exceed 0.3 VUS-PR.</p>
+
+<p>The literature has converged on the diagnosis but not the cure. <em>Internal performance measures</em> (IPMs) such as score variance, entropy, and stability have been shown by Ma &amp; Zhao [2023] to be statistically indistinguishable from random selection across 297 detector configurations. <em>Meta-learning</em> approaches (MetaOD, Zhao 2021; MSAD, Sylligardos et al. 2023) require a historical performance database and assume the new dataset's anomalies will resemble those in the database, a strong and often unfalsifiable assumption. <em>Synthetic-anomaly</em> approaches (Goswami et al., ICLR 2023; SWSA, Fung et al. IEEE TAI 2025) inject perturbations into normal data and rank detectors on this proxy task, but currently use a single anomaly family per work and a single, heuristic aggregation rule.</p>
+
+<p>We argue that the right level of analysis is not a single signal but a <strong>structured ensemble of pseudo-anomaly sources</strong> chosen to cover the manifold-margin regimes that real anomalies populate. Our central observation is that normal-data structure itself reveals a useful pseudo-anomaly: a normal mode held out from training is, by construction, out-of-distribution for the resulting detector. We call this <strong>Leave-Cluster-Out</strong> (LCO) validation. Combined with structured perturbations of normal data, LCO yields a multi-source ranking that we show, under a manifold-margin condition, predicts real-anomaly performance up to a stated regret bound.</p>
+
+<p><strong>Contributions.</strong></p>
+<ol>
+  <li><strong>Leave-Cluster-Out validation</strong> as a new pseudo-anomaly source for AD model selection. Multi-granularity, multi-cluster-algorithm, and difficulty-stratified, with a fairness-aware fold-selection protocol.</li>
+  <li><strong>MS-PAS</strong>, a multi-source meta-selector that combines LCO, six synthetic-perturbation families, and a prediction-residual signal via anomaly-type-aware rank aggregation. The type estimator is derived from normal-data diagnostics and never uses anomaly labels.</li>
+  <li>A <strong>selection-regret bound</strong> (Theorem 1) showing that under a manifold-margin condition and a stated pseudo-anomaly coverage assumption, MS-PAS' ranking of detectors is order-preserving with respect to the true AUC up to an explicit slack.</li>
+  <li>The most comprehensive zero-label benchmark for unsupervised AD model selection to date: 790 series spanning TSB-UAD, UCR Anomaly Archive, multivariate sensor data, and a six-type controlled synthetic suite; 60 candidate models; six published competitor methods reimplemented end-to-end.</li>
+  <li>A failure-mode characterization that quantifies where MS-PAS fails (contextual anomalies; high cluster-imbalance regimes) and ties the failures to violations of the theorem's assumptions.</li>
+</ol>
+
+<!-- ========================================================== -->
+<h2>2. Related Work</h2>
+
+<p>We group prior work into four lines.</p>
+
+<h3>2.1 Internal performance measures (IPMs).</h3>
+<p>IREOS [Marques et al., TKDD 2020; extension 2024] scores an outlier solution by the kernel-logistic separability of flagged points. ASOI [2025] uses score-distribution separation and overlap. Ma &amp; Zhao [2023] survey 7 IPM families on 297 detectors and conclude that none reliably beats random selection on tabular outlier detection. We include IREOS-fast and ASOI as zero-label baselines.</p>
+
+<h3>2.2 Meta-learning and historical transfer.</h3>
+<p>MetaOD [Zhao et al., NeurIPS 2021] and ELECT [Zhao &amp; Akoglu, ICDM 2022] meta-learn a recommender from a benchmark database of detector performances; both target tabular data. MSAD / "Choose Wisely" [Sylligardos et al., PVLDB 2023] casts time-series detector selection as a classification problem trained on TSB-UAD characteristics. We include MSAD as the meta-supervised <em>upper reference</em> rather than a peer baseline: it uses labels we deliberately deny ourselves.</p>
+
+<h3>2.3 Self-supervised / synthetic-anomaly validation.</h3>
+<p>Goswami et al. [ICLR 2023, Oral] combine prediction error, model centrality, and a single synthetic-injection family via Borda/Kemeny aggregation, on univariate and multivariate TS. SWSA [Fung et al., IEEE TAI 2025] uses diffusion-generated synthetic anomalies on images. Idan [ECAI 2024] proposes a collaborative-decision paradigm where detector agreements serve as a validation signal. N-1 Experts [Le Clei et al., AutoML 2022 LBW] uses other detectors' predictions as pseudo-ground-truth for each candidate. Our MS-PAS strictly contains Goswami's signal set as a sub-component and is, to our knowledge, the first work to introduce cluster-holdout validation for AD model selection. Table 1 summarizes the comparison.</p>
+
+<h3>2.4 Time-series AD benchmarks and metrics.</h3>
+<p>TimeEval [Schmidl et al., VLDB 2022] and TSB-UAD [Paparrizos et al., VLDB 2022] are the dominant systematic benchmarks. The UCR Anomaly Archive [Wu &amp; Keogh, 2021] enforces one anomaly per series, designed as a corrective to flawed prior benchmarks. The "Elephant in the Room" paper [Liu &amp; Paparrizos, NeurIPS 2024] documented that point-adjusted F1 produces ranking illusions, motivating the field's shift to <strong>VUS-PR</strong> [Paparrizos et al., VLDBJ 2025] as primary metric. We adopt VUS-PR throughout and report AUC-PR, AUC-ROC, and range-based F1 for legacy comparability.</p>
+
+<h3>Table 1. Comparison with prior unsupervised AD selection methods.</h3>
+<table>
+<thead>
+  <tr>
+    <th>Method (Year, Venue)</th>
+    <th>Modality</th>
+    <th>Signal source(s)</th>
+    <th>Aggregation</th>
+    <th>Zero-label?</th>
+    <th>Theory?</th>
+  </tr>
+</thead>
+<tbody>
+  <tr><td>MetaOD (2021, NeurIPS)</td><td>Tabular</td><td>Meta-features + historical perf.</td><td>Learned</td><td>No (needs DB)</td><td>No</td></tr>
+  <tr><td>IREOS (2020/2024, TKDD)</td><td>Tabular</td><td>Per-point max-margin separability</td><td>Mean</td><td>Yes</td><td>No</td></tr>
+  <tr><td>N-1 Experts (2022, AutoML LBW)</td><td>Any</td><td>Detector consensus</td><td>Mean</td><td>Yes</td><td>No</td></tr>
+  <tr><td>Goswami et al. (2023, ICLR Oral)</td><td>Univariate + Multivariate TS</td><td>Pred-error + centrality + 1 synth family</td><td>Robust rank agg.</td><td>Yes</td><td>No</td></tr>
+  <tr><td>MSAD (2023, PVLDB)</td><td>Univariate TS</td><td>TS characteristics + labeled meta-train</td><td>Classification</td><td>No (needs DB)</td><td>No</td></tr>
+  <tr><td>Ma &amp; Zhao study (2023)</td><td>Tabular</td><td>7 IPM families</td><td>Various</td><td>Yes</td><td>No</td></tr>
+  <tr><td>SWSA (2024/2025, IEEE TAI)</td><td>Images</td><td>Diffusion-synthesized anomalies</td><td>Mean AUC</td><td>Yes</td><td>No</td></tr>
+  <tr><td>Idan (2024, ECAI)</td><td>Tabular-leaning</td><td>Collaborative-decision agreement</td><td>Voting</td><td>Yes</td><td>No</td></tr>
+  <tr><td>ASOI (2025, Complex &amp; Intelligent Systems)</td><td>Any</td><td>Score-distribution overlap</td><td>Index</td><td>Yes</td><td>No</td></tr>
+  <tr style="background: #fff7d6;">
+    <td><strong>MS-PAS (ours)</strong></td>
+    <td>Univariate + Multivariate TS</td>
+    <td><strong>LCO + 6 synth families + residual</strong></td>
+    <td><strong>Type-aware rank fusion</strong></td>
+    <td>Yes</td>
+    <td><strong>Yes (Thm 1)</strong></td>
+  </tr>
+</tbody>
+</table>
+<p class="caption">Bold row: our method. MS-PAS is the only zero-label time-series AD selector that combines multiple pseudo-anomaly families with theoretical analysis.</p>
+
+<!-- ========================================================== -->
+<h2>3. Problem Setup and Notation</h2>
+
+<p>Let <em>X<sub>N</sub></em> = {<em>x<sub>i</sub></em>}<sub>i=1..n</sub> &sub; &reals;<sup>T&times;d</sup> be a set of normal time-series windows. Let <em>M</em> = {<em>m</em><sub>1</sub>, ..., <em>m<sub>K</sub></em>} be a candidate pool of AD models, each producing an anomaly scoring function <em>s<sub>k</sub></em>: &reals;<sup>T&times;d</sup> &rarr; &reals;. Let <em>X<sub>test</sub></em> = <em>X<sub>test</sub></em><sup>N</sup> &cup; <em>X<sub>test</sub></em><sup>A</sup> contain real normal and anomalous samples with binary labels <em>y</em>. The <strong>oracle ranking</strong> is</p>
+
+<p style="text-align: center;">
+&pi;<sup>*</sup>(<em>k</em>) = rank of <em>m<sub>k</sub></em> by Perf(<em>s<sub>k</sub></em>; <em>X<sub>test</sub></em>, <em>y</em>),
+</p>
+
+<p>where Perf is VUS-PR. The <strong>selection-regret</strong> of a selector <em>S</em> is</p>
+
+<p style="text-align: center;">
+Reg(<em>S</em>) = Perf(<em>m<sub>k<sup>*</sup></sub></em>) &minus; Perf(<em>m<sub>S(X<sub>N</sub>)</sub></em>),
+</p>
+
+<p>where <em>k</em><sup>*</sup> = argmax<sub>k</sub> Perf(<em>m<sub>k</sub></em>) and <em>S</em>(<em>X<sub>N</sub></em>) is the selector's choice using normal data only. We adopt a strict three-stage protocol: (Stage 1) all selectors run using only <em>X<sub>N</sub></em>; (Stage 2) oracle Perf is computed and sealed; (Stage 3) regret is computed by comparing selector picks against the sealed oracle. The seal is enforced by encrypting the Stage-2 oracle file and committing its hash before Stage-1 results are inspected.</p>
+
+<!-- ========================================================== -->
+<h2>4. Method: MS-PAS</h2>
+
+<div class="figbox">
+<svg viewBox="0 0 900 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MS-PAS pipeline">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#444"/>
+    </marker>
+    <linearGradient id="src" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef2fb"/><stop offset="1" stop-color="#dbe4f6"/>
+    </linearGradient>
+    <linearGradient id="agg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff3d6"/><stop offset="1" stop-color="#ffe49a"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="150" width="120" height="60" rx="6" fill="#e8f3e8" stroke="#456"/>
+  <text x="70" y="175" text-anchor="middle" font-size="13" font-weight="bold">Normal data</text>
+  <text x="70" y="195" text-anchor="middle" font-size="11">X_N</text>
+
+  <rect x="180" y="40" width="220" height="70" rx="6" fill="url(#src)" stroke="#345"/>
+  <text x="290" y="62" text-anchor="middle" font-size="13" font-weight="bold">Source 1: LCO</text>
+  <text x="290" y="80" text-anchor="middle" font-size="11">5 cluster algos &times; 5 granularities C</text>
+  <text x="290" y="96" text-anchor="middle" font-size="11">difficulty-stratified folds</text>
+
+  <rect x="180" y="140" width="220" height="70" rx="6" fill="url(#src)" stroke="#345"/>
+  <text x="290" y="162" text-anchor="middle" font-size="13" font-weight="bold">Source 2: 6 synthetic families</text>
+  <text x="290" y="180" text-anchor="middle" font-size="11">point, shift, trend, freq, contextual,</text>
+  <text x="290" y="196" text-anchor="middle" font-size="11">mode-exclusion injection</text>
+
+  <rect x="180" y="240" width="220" height="70" rx="6" fill="url(#src)" stroke="#345"/>
+  <text x="290" y="262" text-anchor="middle" font-size="13" font-weight="bold">Source 3: residual signal</text>
+  <text x="290" y="280" text-anchor="middle" font-size="11">stationarity + entropy on normal</text>
+  <text x="290" y="296" text-anchor="middle" font-size="11">predictions (forecasting models)</text>
+
+  <line x1="130" y1="170" x2="178" y2="78" stroke="#444" stroke-width="1.4" marker-end="url(#arr)"/>
+  <line x1="130" y1="180" x2="178" y2="175" stroke="#444" stroke-width="1.4" marker-end="url(#arr)"/>
+  <line x1="130" y1="190" x2="178" y2="272" stroke="#444" stroke-width="1.4" marker-end="url(#arr)"/>
+
+  <rect x="440" y="140" width="180" height="70" rx="6" fill="#eef" stroke="#345"/>
+  <text x="530" y="165" text-anchor="middle" font-size="13" font-weight="bold">Per-source ranks</text>
+  <text x="530" y="184" text-anchor="middle" font-size="11">over 60 candidate models</text>
+  <text x="530" y="200" text-anchor="middle" font-size="11">+ confidence per source</text>
+
+  <line x1="402" y1="75" x2="442" y2="160" stroke="#444" stroke-width="1.4" marker-end="url(#arr)"/>
+  <line x1="402" y1="175" x2="442" y2="175" stroke="#444" stroke-width="1.4" marker-end="url(#arr)"/>
+  <line x1="402" y1="275" x2="442" y2="190" stroke="#444" stroke-width="1.4" marker-end="url(#arr)"/>
+
+  <rect x="660" y="40" width="220" height="70" rx="6" fill="#f6f0fa" stroke="#534">
+  </rect>
+  <text x="770" y="62" text-anchor="middle" font-size="13" font-weight="bold">Type estimator</text>
+  <text x="770" y="80" text-anchor="middle" font-size="11">cluster compactness, seasonality,</text>
+  <text x="770" y="96" text-anchor="middle" font-size="11">KL between clusters &rarr; type prior</text>
+
+  <rect x="660" y="140" width="220" height="70" rx="6" fill="url(#agg)" stroke="#534"/>
+  <text x="770" y="165" text-anchor="middle" font-size="13" font-weight="bold">Type-aware rank fusion</text>
+  <text x="770" y="184" text-anchor="middle" font-size="11">weight matrix W[type, source]</text>
+  <text x="770" y="200" text-anchor="middle" font-size="11">fit on controlled synthetic suite</text>
+
+  <rect x="660" y="240" width="220" height="70" rx="6" fill="#e8f3e8" stroke="#456"/>
+  <text x="770" y="265" text-anchor="middle" font-size="13" font-weight="bold">Selected detector + confidence</text>
+  <text x="770" y="285" text-anchor="middle" font-size="11">argmax + inter-source rank corr.</text>
+
+  <line x1="622" y1="175" x2="660" y2="175" stroke="#444" stroke-width="1.4" marker-end="url(#arr)"/>
+  <line x1="770" y1="110" x2="770" y2="138" stroke="#444" stroke-width="1.4" marker-end="url(#arr)"/>
+  <line x1="770" y1="212" x2="770" y2="238" stroke="#444" stroke-width="1.4" marker-end="url(#arr)"/>
+  <line x1="130" y1="200" x2="660" y2="80" stroke="#aaa" stroke-width="1" stroke-dasharray="4 4"/>
+</svg>
+<p class="caption"><strong>Figure 1.</strong> MS-PAS pipeline. Three pseudo-anomaly sources operate in parallel on normal data, each producing a ranking over 60 candidate detectors. A type estimator computed from normal-data diagnostics produces a categorical prior over the likely anomaly type, which weights the rank-fusion combiner. Dashed line: the type estimator reuses cluster outputs from Source 1, sharing computation.</p>
+</div>
+
+<h3>4.1 Source 1: Leave-Cluster-Out (LCO) Validation</h3>
+
+<p>Given normal windows <em>X<sub>N</sub></em>, we extract a small TSFresh feature panel (mean, std, skew, kurt, autocorrelation at lags 1/2/5/10, spectral entropy, dominant frequency, trend slope). For each cluster algorithm <em>A</em> &in; {KMeans, GMM, AgglomerativeWard, HDBSCAN, KShape} and granularity <em>C</em> &in; {2, 4, 8, 16, 32}, we produce a partition <em>X<sub>N</sub></em> = &cup;<sub>j</sub> <em>C<sub>j</sub></em>. For each cluster <em>C<sub>j</sub></em> passing fairness filters (Sec. 4.4):</p>
+
+<ol>
+  <li>Train each candidate <em>m<sub>k</sub></em> on <em>X<sub>N</sub></em> \ <em>C<sub>j</sub></em>.</li>
+  <li>Score <em>C<sub>j</sub></em> (pseudo-anomalous, label 1) and an IID held-out slice of <em>X<sub>N</sub></em> \ <em>C<sub>j</sub></em> (pseudo-normal, label 0).</li>
+  <li>Compute AUC-PR on pseudo-labels.</li>
+</ol>
+
+<p>The LCO score for <em>m<sub>k</sub></em> is the difficulty-stratified mean over folds, then aggregated across (<em>A</em>, <em>C</em>) by Borda count. The <strong>latent-domain variant</strong> replaces the TSFresh panel with a 50-dimensional PCA of a fixed autoencoder bottleneck (trained on all of <em>X<sub>N</sub></em>); the autoencoder is shared across folds to avoid circularity.</p>
+
+<h3>4.2 Source 2: Structured Synthetic Perturbations</h3>
+
+<p>We inject six families of anomalies into held-out normal windows, with severities chosen by quantile of the family's effect on a reference detector (Isolation Forest):</p>
+
+<table>
+<thead><tr><th>Family</th><th>Construction</th><th>Severities</th></tr></thead>
+<tbody>
+  <tr><td>Point spike</td><td>Multiply a single point by <em>k</em> &sigma;</td><td><em>k</em> &in; {3, 5, 10}</td></tr>
+  <tr><td>Level shift</td><td>Add <em>c</em> &sigma; over windows of 5&ndash;20% length</td><td><em>c</em> &in; {2, 4, 8}</td></tr>
+  <tr><td>Trend change</td><td>Inject linear slope of varying steepness over a window</td><td>3 slopes</td></tr>
+  <tr><td>Frequency change</td><td>Replace a window with same-mean signal at altered dominant frequency</td><td>3 perturbation ratios</td></tr>
+  <tr><td>Contextual</td><td>Swap a window into the wrong seasonal phase (value normal globally, abnormal locally)</td><td>2 phase shifts</td></tr>
+  <tr><td>Mode-exclusion</td><td>Train on K&minus;1 of K detected modes; score the held-out mode</td><td>K &in; {3, 5, 8}</td></tr>
+</tbody>
+</table>
+
+<p>Each family yields a per-model AUC-PR. Source 2 outputs six per-family ranks plus a "Source-2 aggregate" rank (mean rank across families).</p>
+
+<h3>4.3 Source 3: Prediction-Residual Consistency</h3>
+
+<p>For forecasting-capable candidates (LSTM-AE, TCN-AE, ARIMA, Matrix Profile via left/right join), we score the residual time series on held-out normal data by (a) Augmented Dickey-Fuller stationarity p-value and (b) permutation entropy. The combined score is the mean rank of (low p-value, low entropy). This is the IPM family Ma &amp; Zhao [2023] found weak on its own; we include it because it remains useful <em>in combination</em> (see ablation A3 in Section 8).</p>
+
+<h3>4.4 Fairness-Aware Fold Construction</h3>
+
+<p>A naive LCO can produce folds where the held-out cluster is either trivially separable (all detectors score high) or indistinguishable from training clusters (ranking is noise). Both failure modes corrupt model ranking. We compute four <em>model-independent</em> difficulty diagnostics on each fold:</p>
+
+<ul>
+  <li><strong>d<sub>1</sub></strong>: mean Wasserstein-2 distance from <em>C<sub>j</sub></em> to nearest training cluster (in feature space).</li>
+  <li><strong>d<sub>2</sub></strong>: MMD (RBF kernel) between <em>C<sub>j</sub></em> and the union of training clusters.</li>
+  <li><strong>d<sub>3</sub></strong>: silhouette score of <em>C<sub>j</sub></em> in the global partition.</li>
+  <li><strong>d<sub>4</sub></strong>: AUC of a logistic regression on TSFresh features distinguishing <em>C<sub>j</sub></em> from training clusters (no AD model involved).</li>
+</ul>
+
+<p>We bucket folds by quantile of d<sub>4</sub> into Easy / Medium / Hard. Trivial folds (d<sub>4</sub> &gt; 0.95) and impossible folds (d<sub>4</sub> &lt; 0.55) are excluded from the main aggregation and reported separately. Folds with cluster size &lt; 30 windows are dropped. Aggregation uses fold-level rank, not raw AUC, to avoid scale issues across folds.</p>
+
+<h3>4.5 Type-Aware Rank Fusion</h3>
+
+<p>Let &rho;<sub>s</sub>(<em>k</em>) denote the rank of model <em>k</em> in source <em>s</em>. We define three aggregation strategies, all reported:</p>
+
+<ul>
+  <li><strong>Borda</strong>: <em>r</em>(<em>k</em>) = mean<sub>s</sub> &rho;<sub>s</sub>(<em>k</em>). Strong baseline.</li>
+  <li><strong>Plackett-Luce MLE</strong>: fit a PL model over per-source rankings.</li>
+  <li><strong>Type-aware</strong>: a learned weight matrix <em>W</em>[<em>t</em>, <em>s</em>] maps anomaly types <em>t</em> &in; {point, shift, trend, freq, contextual, mode-exclusion} to source weights. At test time, the dataset's anomaly-type prior <em>&pi;</em>(<em>t</em>) is inferred from normal-data diagnostics (cluster compactness, seasonality strength, KL-divergence between cluster pairs, modality count). Final aggregator: <em>r</em>(<em>k</em>) = &sum;<sub>t</sub> &pi;(<em>t</em>) &sum;<sub>s</sub> <em>W</em>[<em>t</em>, <em>s</em>] &rho;<sub>s</sub>(<em>k</em>).</li>
+</ul>
+
+<p>The weight matrix <em>W</em> is fit on the <strong>controlled synthetic suite</strong> (Section 6.1), where ground-truth anomaly types are known by construction. <em>W</em> is never fit on the real benchmark series. The type estimator <em>&pi;</em> is fit on the same synthetic suite.</p>
+
+<h3>4.6 Confidence Score</h3>
+
+<p>MS-PAS returns a confidence value defined as the mean inter-source Kendall tau across the per-source rankings. Low confidence triggers fallback to a domain-default (Isolation Forest, n_estimators=100); this affects approximately <span class="sim">7%</span> of our 790 evaluation series.</p>
+
+<!-- ========================================================== -->
+<h2>5. Theoretical Analysis</h2>
+
+<p>We formalize when MS-PAS' pseudo-anomaly AUC is order-preserving with respect to true AUC.</p>
+
+<h3>5.1 Setup</h3>
+
+<p>Let <em>P</em> be the normal distribution supported on a manifold <em>M</em> &sub; &reals;<sup>d</sup>. Let <em>Q</em> be the anomaly distribution, supported on an <em>&epsilon;</em>-tube exterior of <em>M</em>: dist(supp(<em>Q</em>), <em>M</em>) &ge; &epsilon;. Let <em>P&#771;</em> denote the pseudo-anomaly distribution from MS-PAS: a mixture of (i) held-out modes of <em>P</em> (LCO), (ii) <em>&sigma;</em>-perturbations of <em>P</em> samples (synthetic injections). Let candidate scoring functions <em>s</em><sub>k</sub> be <em>L</em>-Lipschitz on a compact domain.</p>
+
+<p>Define AUC<sub>k</sub> = <em>Pr</em>(<em>s<sub>k</sub></em>(<em>q</em>) &gt; <em>s<sub>k</sub></em>(<em>p</em>)), <em>p</em>~<em>P</em>, <em>q</em>~<em>Q</em>; and AUC&#771;<sub>k</sub> similarly with <em>Q</em> replaced by <em>P&#771;</em>.</p>
+
+<div class="theorem">
+<span class="label">Theorem 1 (Selection-regret bound).</span>
+Suppose (A1) <strong>manifold-margin</strong>: dist(supp(<em>Q</em>), <em>M</em>) &ge; <em>&epsilon;</em>, and (A2) <strong>pseudo-anomaly coverage</strong>: <em>W</em><sub>1</sub>(<em>P&#771;</em>, <em>Q</em>) &le; <em>&delta;</em>. Then for any two candidates <em>m</em><sub>1</sub>, <em>m</em><sub>2</sub>,
+<p style="text-align: center; margin: 0.6em 0;">
+| (AUC&#771;<sub>1</sub> &minus; AUC&#771;<sub>2</sub>) &minus; (AUC<sub>1</sub> &minus; AUC<sub>2</sub>) | &le; 2<em>L</em>(<em>&delta;</em> + 2<em>&sigma;</em>) / <em>&epsilon;</em>.
+</p>
+In particular, if AUC<sub>1</sub> &minus; AUC<sub>2</sub> &gt; 2<em>L</em>(<em>&delta;</em> + 2<em>&sigma;</em>) / <em>&epsilon;</em>, then the MS-PAS ranking agrees with the oracle on the pair {<em>m</em><sub>1</sub>, <em>m</em><sub>2</sub>}.
+</div>
+
+<p class="proof"><em>Proof sketch.</em> The Lipschitz property bounds | E<sub>q ~ Q</sub> s<sub>k</sub>(q) &minus; E<sub>q ~ P&#771;</sub> s<sub>k</sub>(q) | by <em>L</em> <em>W</em><sub>1</sub>(<em>P&#771;</em>, <em>Q</em>) &le; <em>L &delta;</em> per Kantorovich-Rubinstein. Combining with the analogous bound for normal-vs-perturbed via <em>&sigma;</em>, then applying the standard AUC-as-rank decomposition, gives the stated slack. The margin <em>&epsilon;</em> appears because AUC differences scale inversely with the score-gap range, which is bounded below by <em>L &epsilon;</em> under (A1). Full proof in Appendix A.4.</p>
+
+<p>The theorem is a <strong>conditional</strong> guarantee, not a PAC statement. It is useful for two reasons: (i) it identifies precisely the failure modes (small <em>&epsilon;</em>: anomalies near the manifold; large <em>&delta;</em>: pseudo-anomaly mixture poorly covers <em>Q</em>); (ii) it justifies <em>why</em> multiple sources in MS-PAS reduce <em>&delta;</em> (better coverage) compared to single-source baselines.</p>
+
+<h3>5.2 Empirical verification</h3>
+
+<p>On the controlled synthetic suite we vary the manifold margin <em>&epsilon;</em> and pseudo-anomaly diversity <em>&delta;</em> and measure observed regret. Figure 3 shows the relationship.</p>
+
+<!-- ========================================================== -->
+<h2>6. Experimental Protocol</h2>
+
+<h3>6.1 Datasets</h3>
+
+<table>
+<thead>
+  <tr>
+    <th>Suite</th>
+    <th class="num">Series</th>
+    <th class="num">Length</th>
+    <th>Domain</th>
+    <th>Anomaly types</th>
+  </tr>
+</thead>
+<tbody>
+  <tr><td>TSB-UAD (stratified)</td><td class="num">250</td><td class="num">1k&ndash;50k</td><td>Mixed univariate</td><td>Mixed, mostly point + shift</td></tr>
+  <tr><td>UCR Anomaly Archive</td><td class="num">250</td><td class="num">5k&ndash;100k</td><td>Univariate, one anomaly per series</td><td>Mixed</td></tr>
+  <tr><td>SMD</td><td class="num">28</td><td class="num">~25k</td><td>Server telemetry (multivariate)</td><td>System failures</td></tr>
+  <tr><td>SMAP + MSL</td><td class="num">82</td><td class="num">~5k</td><td>NASA telemetry (multivariate)</td><td>Mixed (label issues noted)</td></tr>
+  <tr><td>Synthetic suite (ours)</td><td class="num">180</td><td class="num">10k</td><td>Controlled univariate</td><td>6 types, 30 series each</td></tr>
+  <tr><td><strong>Total</strong></td><td class="num"><strong>790</strong></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+</tbody>
+</table>
+<p class="caption"><strong>Table 2.</strong> Benchmark composition. The stratified TSB-UAD subset is deterministic from a frozen seed (configs/subsets/v1.yaml). Multivariate datasets test generalization beyond univariate.</p>
+
+<h3>6.2 Candidate Pool</h3>
+
+<p>15 algorithm families &times; ~4 hyperparameter variants = 60 candidates. The full list is in Appendix A.1. The pool spans (a) classical: Isolation Forest, LOF, OCSVM, KNN, PCA, HBOS, COPOD, ECOD, EllipticEnvelope; (b) time-series: Matrix Profile (STUMPY), seasonal-decomposition residual, ARIMA residual; (c) deep: LSTM Autoencoder, TCN Autoencoder, USAD. Deep models are evaluated on a 200-series stratified subset only, with a documented compute-vs-coverage trade-off.</p>
+
+<h3>6.3 Metrics</h3>
+
+<p>Primary: <strong>VUS-PR</strong> [Paparrizos et al., VLDBJ 2025]. Secondary: AUC-PR, AUC-ROC, range-based F1 [Tatbul et al.]. Point-adjusted F1 is explicitly excluded per Liu &amp; Paparrizos [NeurIPS 2024].</p>
+
+<p>Selection regret is the difference (oracle's best VUS-PR) &minus; (selector's chosen VUS-PR), averaged across datasets. Significance is paired bootstrap (10,000 resamples) with Bonferroni correction across 6 zero-label competitor comparisons.</p>
+
+<h3>6.4 Stage Discipline</h3>
+
+<p>Stage 1 (selector outputs computed using only normal data) is frozen and hash-committed before Stage 2 (oracle Perf on test set with labels) is computed. Stage 3 (regret) compares Stage 1 picks against the sealed Stage 2 oracle. The implementation enforces this via an encrypted oracle file unlocked only by a post-Stage-1 flag.</p>
+
+<!-- ========================================================== -->
+<h2>7. Main Results</h2>
+
+<h3>7.1 Selection regret on the full benchmark</h3>
+
+<div class="figbox">
+<svg viewBox="0 0 780 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Selection regret bar chart">
+  <!-- Axes -->
+  <line x1="180" y1="30" x2="180" y2="320" stroke="#222" stroke-width="1.2"/>
+  <line x1="180" y1="320" x2="760" y2="320" stroke="#222" stroke-width="1.2"/>
+  <text x="20" y="180" font-size="12" transform="rotate(-90 30,180)">Mean VUS-PR regret (lower better)</text>
+  <!-- Gridlines -->
+  <g font-size="10" fill="#666">
+    <line x1="180" y1="35" x2="760" y2="35" stroke="#ddd"/>
+    <line x1="180" y1="90" x2="760" y2="90" stroke="#ddd"/>
+    <line x1="180" y1="148" x2="760" y2="148" stroke="#ddd"/>
+    <line x1="180" y1="205" x2="760" y2="205" stroke="#ddd"/>
+    <line x1="180" y1="262" x2="760" y2="262" stroke="#ddd"/>
+    <text x="175" y="38" text-anchor="end">0.20</text>
+    <text x="175" y="93" text-anchor="end">0.15</text>
+    <text x="175" y="151" text-anchor="end">0.10</text>
+    <text x="175" y="208" text-anchor="end">0.05</text>
+    <text x="175" y="265" text-anchor="end">0.025</text>
+    <text x="175" y="323" text-anchor="end">0.00</text>
+  </g>
+  <!-- Bars: heights = (value/0.20)*290; y_top = 320 - height -->
+  <!-- Random 0.156 -->
+  <rect x="195" y="139" width="34" height="181" fill="#999"/>
+  <text x="212" y="335" text-anchor="middle" font-size="9">Random</text>
+  <text x="212" y="135" text-anchor="middle" font-size="10" fill="#c80000">.156</text>
+  <!-- Normal-loss 0.128 -->
+  <rect x="240" y="170" width="34" height="150" fill="#999"/>
+  <text x="257" y="335" text-anchor="middle" font-size="9">Norm-loss</text>
+  <text x="257" y="166" text-anchor="middle" font-size="10" fill="#c80000">.128</text>
+  <!-- Bootstrap 0.115 -->
+  <rect x="285" y="186" width="34" height="134" fill="#999"/>
+  <text x="302" y="335" text-anchor="middle" font-size="9">Bootstrap</text>
+  <text x="302" y="182" text-anchor="middle" font-size="10" fill="#c80000">.115</text>
+  <!-- Default 0.107 -->
+  <rect x="330" y="195" width="34" height="125" fill="#999"/>
+  <text x="347" y="335" text-anchor="middle" font-size="9">Default</text>
+  <text x="347" y="191" text-anchor="middle" font-size="10" fill="#c80000">.107</text>
+  <!-- ASOI 0.103 -->
+  <rect x="375" y="200" width="34" height="120" fill="#4a78c4"/>
+  <text x="392" y="335" text-anchor="middle" font-size="9">ASOI</text>
+  <text x="392" y="196" text-anchor="middle" font-size="10" fill="#c80000">.103</text>
+  <!-- IREOS 0.094 -->
+  <rect x="420" y="210" width="34" height="110" fill="#4a78c4"/>
+  <text x="437" y="335" text-anchor="middle" font-size="9">IREOS-fast</text>
+  <text x="437" y="206" text-anchor="middle" font-size="10" fill="#c80000">.094</text>
+  <!-- Idan 0.089 -->
+  <rect x="465" y="216" width="34" height="104" fill="#4a78c4"/>
+  <text x="482" y="335" text-anchor="middle" font-size="9">Idan'24</text>
+  <text x="482" y="212" text-anchor="middle" font-size="10" fill="#c80000">.089</text>
+  <!-- N-1 Experts 0.082 -->
+  <rect x="510" y="225" width="34" height="95" fill="#4a78c4"/>
+  <text x="527" y="335" text-anchor="middle" font-size="9">N-1 Exp.</text>
+  <text x="527" y="221" text-anchor="middle" font-size="10" fill="#c80000">.082</text>
+  <!-- Goswami 0.076 -->
+  <rect x="555" y="232" width="34" height="88" fill="#4a78c4"/>
+  <text x="572" y="335" text-anchor="middle" font-size="9">Goswami'23</text>
+  <text x="572" y="228" text-anchor="middle" font-size="10" fill="#c80000">.076</text>
+  <!-- MS-PAS Borda 0.052 -->
+  <rect x="600" y="260" width="34" height="60" fill="#d3592a"/>
+  <text x="617" y="335" text-anchor="middle" font-size="9">MS-Borda</text>
+  <text x="617" y="256" text-anchor="middle" font-size="10" fill="#c80000">.052</text>
+  <!-- MS-PAS PL 0.048 -->
+  <rect x="645" y="265" width="34" height="55" fill="#d3592a"/>
+  <text x="662" y="335" text-anchor="middle" font-size="9">MS-PL</text>
+  <text x="662" y="261" text-anchor="middle" font-size="10" fill="#c80000">.048</text>
+  <!-- MS-PAS TA 0.043 (ours) -->
+  <rect x="690" y="270" width="34" height="50" fill="#b80000"/>
+  <text x="707" y="335" text-anchor="middle" font-size="9" font-weight="bold">MS-PAS TA</text>
+  <text x="707" y="266" text-anchor="middle" font-size="10" fill="#c80000" font-weight="bold">.043</text>
+  <!-- MSAD upper ref -->
+  <rect x="735" y="276" width="34" height="44" fill="#2e7d32" opacity="0.7"/>
+  <text x="752" y="335" text-anchor="middle" font-size="9" fill="#2e7d32">MSAD*</text>
+  <text x="752" y="272" text-anchor="middle" font-size="10" fill="#c80000">.038</text>
+  <!-- Reference line for MSAD upper-ref -->
+  <line x1="180" y1="276" x2="760" y2="276" stroke="#2e7d32" stroke-dasharray="4 4" stroke-width="1"/>
+  <text x="765" y="279" font-size="10" fill="#2e7d32">MSAD upper-ref</text>
+  <!-- Legend -->
+  <g font-size="10">
+    <rect x="195" y="20" width="12" height="10" fill="#999"/><text x="212" y="30">anchors</text>
+    <rect x="265" y="20" width="12" height="10" fill="#4a78c4"/><text x="282" y="30">zero-label competitors</text>
+    <rect x="430" y="20" width="12" height="10" fill="#b80000"/><text x="447" y="30">MS-PAS (ours)</text>
+    <rect x="555" y="20" width="12" height="10" fill="#2e7d32" opacity="0.7"/><text x="572" y="30">meta-supervised upper-ref</text>
+  </g>
+</svg>
+<p class="caption"><strong>Figure 2.</strong> Mean VUS-PR selection regret across the 790-series benchmark. Lower is better. <span class="sim">All numbers simulated.</span> MS-PAS type-aware (MS-PAS TA) achieves <span class="sim">0.043</span>, beating every zero-label competitor by &ge;<span class="sim">0.033</span> absolute (paired bootstrap, Bonferroni-corrected p&lt;<span class="sim">0.01</span>). The gap to the meta-supervised MSAD upper-reference is <span class="sim">0.005</span>, suggesting most of the value of historical labels is recoverable from normal-data structure alone.</p>
+</div>
+
+<h3>Table 3. Main results: all selectors, full benchmark.</h3>
+<table>
+<thead>
+  <tr>
+    <th>Selector</th>
+    <th class="num">VUS-PR regret &darr;</th>
+    <th class="num">AUC-PR regret &darr;</th>
+    <th class="num">Top-1 acc. &uarr;</th>
+    <th class="num">Top-3 overlap &uarr;</th>
+    <th class="num">Spearman &uarr;</th>
+    <th class="num">Cost (s) &darr;</th>
+  </tr>
+</thead>
+<tbody>
+  <tr><td>Random</td><td class="num sim">.156 &plusmn; .041</td><td class="num sim">.149 &plusmn; .039</td><td class="num sim">.017</td><td class="num sim">.05</td><td class="num sim">.00</td><td class="num sim">0</td></tr>
+  <tr><td>Normal-loss</td><td class="num sim">.128 &plusmn; .037</td><td class="num sim">.122 &plusmn; .036</td><td class="num sim">.038</td><td class="num sim">.18</td><td class="num sim">.15</td><td class="num sim">25</td></tr>
+  <tr><td>Bootstrap stab.</td><td class="num sim">.115 &plusmn; .029</td><td class="num sim">.110 &plusmn; .028</td><td class="num sim">.074</td><td class="num sim">.27</td><td class="num sim">.21</td><td class="num sim">180</td></tr>
+  <tr><td>Default IForest</td><td class="num sim">.107 &plusmn; .032</td><td class="num sim">.099 &plusmn; .033</td><td class="num sim">.043</td><td class="num sim">.20</td><td class="num sim">.11</td><td class="num sim">2</td></tr>
+  <tr><td>ASOI [2025]</td><td class="num sim">.103 &plusmn; .028</td><td class="num sim">.097 &plusmn; .027</td><td class="num sim">.083</td><td class="num sim">.31</td><td class="num sim">.28</td><td class="num sim">1</td></tr>
+  <tr><td>IREOS-fast [2024]</td><td class="num sim">.094 &plusmn; .031</td><td class="num sim">.088 &plusmn; .030</td><td class="num sim">.103</td><td class="num sim">.36</td><td class="num sim">.34</td><td class="num sim">95</td></tr>
+  <tr><td>Idan [ECAI 2024]</td><td class="num sim">.089 &plusmn; .027</td><td class="num sim">.084 &plusmn; .027</td><td class="num sim">.119</td><td class="num sim">.41</td><td class="num sim">.39</td><td class="num sim">12</td></tr>
+  <tr><td>N-1 Experts [2022]</td><td class="num sim">.082 &plusmn; .024</td><td class="num sim">.078 &plusmn; .025</td><td class="num sim">.143</td><td class="num sim">.45</td><td class="num sim">.41</td><td class="num sim">3</td></tr>
+  <tr><td>Goswami et al. [ICLR'23]</td><td class="num sim">.076 &plusmn; .022</td><td class="num sim">.071 &plusmn; .023</td><td class="num sim">.189</td><td class="num sim">.52</td><td class="num sim">.47</td><td class="num sim">45</td></tr>
+  <tr><td>MS-PAS, Borda</td><td class="num sim">.052 &plusmn; .019</td><td class="num sim">.049 &plusmn; .020</td><td class="num sim">.286</td><td class="num sim">.59</td><td class="num sim">.57</td><td class="num sim">128</td></tr>
+  <tr><td>MS-PAS, Plackett-Luce</td><td class="num sim">.048 &plusmn; .018</td><td class="num sim">.046 &plusmn; .019</td><td class="num sim">.311</td><td class="num sim">.62</td><td class="num sim">.60</td><td class="num sim">130</td></tr>
+  <tr style="background:#fff7d6;"><td><strong>MS-PAS, type-aware (ours)</strong></td><td class="num sim"><strong>.043 &plusmn; .017</strong></td><td class="num sim"><strong>.041 &plusmn; .017</strong></td><td class="num sim"><strong>.336</strong></td><td class="num sim"><strong>.64</strong></td><td class="num sim"><strong>.62</strong></td><td class="num sim">130</td></tr>
+  <tr><td><em>MSAD (meta-supervised upper-ref)</em></td><td class="num sim"><em>.038 &plusmn; .014</em></td><td class="num sim"><em>.036 &plusmn; .015</em></td><td class="num sim"><em>.385</em></td><td class="num sim"><em>.71</em></td><td class="num sim"><em>.69</em></td><td class="num sim"><em>8</em></td></tr>
+</tbody>
+</table>
+<p class="caption"><strong>Table 3.</strong> Selection regret and ranking quality across the full 790-series benchmark, averaged with &plusmn; one standard deviation across datasets. <span class="sim">All values simulated.</span> <em>MSAD</em> is italicized because it is the meta-supervised upper-reference, not a peer competitor. "Cost" is per-dataset selector wall-clock seconds, excluding the cost of training the candidate models (which is identical for every selector). MS-PAS type-aware satisfies all gates G1&ndash;G4 of the success criteria (Section 13 of implementation plan).</p>
+
+<div class="key-takeaway">
+<strong>Headline result.</strong> MS-PAS type-aware reduces VUS-PR selection regret to <span class="sim">0.043</span>, a <span class="sim">43%</span> relative reduction over the strongest zero-label competitor (Goswami et al. ICLR 2023 Oral, <span class="sim">0.076</span>), and closes <span class="sim">87%</span> of the gap between Goswami and the meta-supervised upper-reference MSAD.
+</div>
+
+<h3>7.2 Per-Anomaly-Type Breakdown</h3>
+
+<p>Table 4 stratifies regret by anomaly type, computed on the controlled synthetic suite where ground-truth types are known.</p>
+
+<table>
+<thead>
+  <tr>
+    <th>Selector</th>
+    <th class="num">Point</th>
+    <th class="num">Level shift</th>
+    <th class="num">Trend</th>
+    <th class="num">Frequency</th>
+    <th class="num">Contextual</th>
+    <th class="num">Mode-excl.</th>
+  </tr>
+</thead>
+<tbody>
+  <tr><td>Random</td><td class="num sim">.181</td><td class="num sim">.166</td><td class="num sim">.158</td><td class="num sim">.171</td><td class="num sim">.149</td><td class="num sim">.142</td></tr>
+  <tr><td>Default</td><td class="num sim">.097</td><td class="num sim">.103</td><td class="num sim">.116</td><td class="num sim">.121</td><td class="num sim">.125</td><td class="num sim">.083</td></tr>
+  <tr><td>ASOI</td><td class="num sim">.094</td><td class="num sim">.102</td><td class="num sim">.114</td><td class="num sim">.115</td><td class="num sim">.119</td><td class="num sim">.071</td></tr>
+  <tr><td>IREOS-fast</td><td class="num sim">.085</td><td class="num sim">.093</td><td class="num sim">.104</td><td class="num sim">.106</td><td class="num sim">.112</td><td class="num sim">.064</td></tr>
+  <tr><td>N-1 Experts</td><td class="num sim">.074</td><td class="num sim">.081</td><td class="num sim">.089</td><td class="num sim">.094</td><td class="num sim">.104</td><td class="num sim">.052</td></tr>
+  <tr><td>Goswami et al.</td><td class="num sim">.064</td><td class="num sim">.082</td><td class="num sim">.091</td><td class="num sim">.087</td><td class="num sim">.103</td><td class="num sim">.072</td></tr>
+  <tr style="background:#fff7d6;"><td><strong>MS-PAS, type-aware</strong></td><td class="num sim"><strong>.031</strong></td><td class="num sim"><strong>.038</strong></td><td class="num sim"><strong>.045</strong></td><td class="num sim"><strong>.040</strong></td><td class="num sim"><strong>.071</strong></td><td class="num sim"><strong>.021</strong></td></tr>
+  <tr><td><em>MSAD upper-ref</em></td><td class="num sim"><em>.029</em></td><td class="num sim"><em>.036</em></td><td class="num sim"><em>.042</em></td><td class="num sim"><em>.038</em></td><td class="num sim"><em>.068</em></td><td class="num sim"><em>.024</em></td></tr>
+</tbody>
+</table>
+<p class="caption"><strong>Table 4.</strong> Per-anomaly-type VUS-PR regret on the controlled synthetic suite (30 series &times; 6 types). <span class="sim">All values simulated.</span> MS-PAS dominates uniformly. Mode-exclusion is its strongest regime (LCO's structural prior aligns directly with this anomaly type). Contextual anomalies are the weakest regime for all methods, consistent with the difficulty of detecting locally-abnormal but globally-normal values without temporal modeling.</p>
+
+<div class="figbox">
+<svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Anomaly-type heatmap">
+  <text x="380" y="20" text-anchor="middle" font-size="13" font-weight="bold">Failure-mode heatmap: regret by (selector &times; anomaly type)</text>
+  <!-- y labels (methods) -->
+  <g font-size="11">
+    <text x="190" y="58" text-anchor="end">Random</text>
+    <text x="190" y="88" text-anchor="end">Default</text>
+    <text x="190" y="118" text-anchor="end">ASOI</text>
+    <text x="190" y="148" text-anchor="end">IREOS-fast</text>
+    <text x="190" y="178" text-anchor="end">N-1 Experts</text>
+    <text x="190" y="208" text-anchor="end">Goswami'23</text>
+    <text x="190" y="238" text-anchor="end" font-weight="bold">MS-PAS TA</text>
+    <text x="190" y="268" text-anchor="end" fill="#2e7d32"><em>MSAD*</em></text>
+  </g>
+  <!-- x labels (types) -->
+  <g font-size="10">
+    <text x="240" y="42" text-anchor="middle">Point</text>
+    <text x="320" y="42" text-anchor="middle">Shift</text>
+    <text x="400" y="42" text-anchor="middle">Trend</text>
+    <text x="480" y="42" text-anchor="middle">Freq</text>
+    <text x="560" y="42" text-anchor="middle">Contextual</text>
+    <text x="640" y="42" text-anchor="middle">Mode-excl.</text>
+  </g>
+  <!-- Helper: cell color based on regret value: green=0, yellow=0.075, red=0.15+ -->
+  <!-- I'll inline RGB hex for each cell -->
+  <!-- Row Random (~.142-.181): all red -->
+  <g>
+    <rect x="200" y="48" width="80" height="20" fill="#e02f2f"/><text x="240" y="62" text-anchor="middle" font-size="10" fill="white">.181</text>
+    <rect x="280" y="48" width="80" height="20" fill="#e85a3a"/><text x="320" y="62" text-anchor="middle" font-size="10" fill="white">.166</text>
+    <rect x="360" y="48" width="80" height="20" fill="#ec6d3f"/><text x="400" y="62" text-anchor="middle" font-size="10" fill="white">.158</text>
+    <rect x="440" y="48" width="80" height="20" fill="#e85737"/><text x="480" y="62" text-anchor="middle" font-size="10" fill="white">.171</text>
+    <rect x="520" y="48" width="80" height="20" fill="#ed7e3f"/><text x="560" y="62" text-anchor="middle" font-size="10" fill="white">.149</text>
+    <rect x="600" y="48" width="80" height="20" fill="#ed8842"/><text x="640" y="62" text-anchor="middle" font-size="10" fill="white">.142</text>
+  </g>
+  <!-- Default row -->
+  <g>
+    <rect x="200" y="78" width="80" height="20" fill="#f0b34a"/><text x="240" y="92" text-anchor="middle" font-size="10">.097</text>
+    <rect x="280" y="78" width="80" height="20" fill="#f0a747"/><text x="320" y="92" text-anchor="middle" font-size="10">.103</text>
+    <rect x="360" y="78" width="80" height="20" fill="#ee9544"/><text x="400" y="92" text-anchor="middle" font-size="10">.116</text>
+    <rect x="440" y="78" width="80" height="20" fill="#ee8c41"/><text x="480" y="92" text-anchor="middle" font-size="10">.121</text>
+    <rect x="520" y="78" width="80" height="20" fill="#ec8741"/><text x="560" y="92" text-anchor="middle" font-size="10">.125</text>
+    <rect x="600" y="78" width="80" height="20" fill="#f1ce58"/><text x="640" y="92" text-anchor="middle" font-size="10">.083</text>
+  </g>
+  <!-- ASOI -->
+  <g>
+    <rect x="200" y="108" width="80" height="20" fill="#f1b94c"/><text x="240" y="122" text-anchor="middle" font-size="10">.094</text>
+    <rect x="280" y="108" width="80" height="20" fill="#f0a847"/><text x="320" y="122" text-anchor="middle" font-size="10">.102</text>
+    <rect x="360" y="108" width="80" height="20" fill="#ee9744"/><text x="400" y="122" text-anchor="middle" font-size="10">.114</text>
+    <rect x="440" y="108" width="80" height="20" fill="#ee9544"/><text x="480" y="122" text-anchor="middle" font-size="10">.115</text>
+    <rect x="520" y="108" width="80" height="20" fill="#ed8e43"/><text x="560" y="122" text-anchor="middle" font-size="10">.119</text>
+    <rect x="600" y="108" width="80" height="20" fill="#f2d65d"/><text x="640" y="122" text-anchor="middle" font-size="10">.071</text>
+  </g>
+  <!-- IREOS-fast -->
+  <g>
+    <rect x="200" y="138" width="80" height="20" fill="#f1c652"/><text x="240" y="152" text-anchor="middle" font-size="10">.085</text>
+    <rect x="280" y="138" width="80" height="20" fill="#f1ba4d"/><text x="320" y="152" text-anchor="middle" font-size="10">.093</text>
+    <rect x="360" y="138" width="80" height="20" fill="#f0a849"/><text x="400" y="152" text-anchor="middle" font-size="10">.104</text>
+    <rect x="440" y="138" width="80" height="20" fill="#f0a347"/><text x="480" y="152" text-anchor="middle" font-size="10">.106</text>
+    <rect x="520" y="138" width="80" height="20" fill="#ef9b46"/><text x="560" y="152" text-anchor="middle" font-size="10">.112</text>
+    <rect x="600" y="138" width="80" height="20" fill="#f0dd62"/><text x="640" y="152" text-anchor="middle" font-size="10">.064</text>
+  </g>
+  <!-- N-1 Experts -->
+  <g>
+    <rect x="200" y="168" width="80" height="20" fill="#f0d65b"/><text x="240" y="182" text-anchor="middle" font-size="10">.074</text>
+    <rect x="280" y="168" width="80" height="20" fill="#f0cc56"/><text x="320" y="182" text-anchor="middle" font-size="10">.081</text>
+    <rect x="360" y="168" width="80" height="20" fill="#f1c252"/><text x="400" y="182" text-anchor="middle" font-size="10">.089</text>
+    <rect x="440" y="168" width="80" height="20" fill="#f1bb4f"/><text x="480" y="182" text-anchor="middle" font-size="10">.094</text>
+    <rect x="520" y="168" width="80" height="20" fill="#f0a849"/><text x="560" y="182" text-anchor="middle" font-size="10">.104</text>
+    <rect x="600" y="168" width="80" height="20" fill="#dfeb73"/><text x="640" y="182" text-anchor="middle" font-size="10">.052</text>
+  </g>
+  <!-- Goswami -->
+  <g>
+    <rect x="200" y="198" width="80" height="20" fill="#f1dd62"/><text x="240" y="212" text-anchor="middle" font-size="10">.064</text>
+    <rect x="280" y="198" width="80" height="20" fill="#f1cb56"/><text x="320" y="212" text-anchor="middle" font-size="10">.082</text>
+    <rect x="360" y="198" width="80" height="20" fill="#f1bd50"/><text x="400" y="212" text-anchor="middle" font-size="10">.091</text>
+    <rect x="440" y="198" width="80" height="20" fill="#f1c151"/><text x="480" y="212" text-anchor="middle" font-size="10">.087</text>
+    <rect x="520" y="198" width="80" height="20" fill="#f0a849"/><text x="560" y="212" text-anchor="middle" font-size="10">.103</text>
+    <rect x="600" y="198" width="80" height="20" fill="#f1d75e"/><text x="640" y="212" text-anchor="middle" font-size="10">.072</text>
+  </g>
+  <!-- MS-PAS TA -->
+  <g>
+    <rect x="200" y="228" width="80" height="20" fill="#a5d99a"/><text x="240" y="242" text-anchor="middle" font-size="10">.031</text>
+    <rect x="280" y="228" width="80" height="20" fill="#b8e0a3"/><text x="320" y="242" text-anchor="middle" font-size="10">.038</text>
+    <rect x="360" y="228" width="80" height="20" fill="#cee6ad"/><text x="400" y="242" text-anchor="middle" font-size="10">.045</text>
+    <rect x="440" y="228" width="80" height="20" fill="#bfe3a8"/><text x="480" y="242" text-anchor="middle" font-size="10">.040</text>
+    <rect x="520" y="228" width="80" height="20" fill="#f0d35d"/><text x="560" y="242" text-anchor="middle" font-size="10">.071</text>
+    <rect x="600" y="228" width="80" height="20" fill="#7fc97f"/><text x="640" y="242" text-anchor="middle" font-size="10">.021</text>
+  </g>
+  <!-- MSAD -->
+  <g>
+    <rect x="200" y="258" width="80" height="20" fill="#9bd594"/><text x="240" y="272" text-anchor="middle" font-size="10" fill="#2e7d32">.029</text>
+    <rect x="280" y="258" width="80" height="20" fill="#b3dea0"/><text x="320" y="272" text-anchor="middle" font-size="10" fill="#2e7d32">.036</text>
+    <rect x="360" y="258" width="80" height="20" fill="#c7e4ab"/><text x="400" y="272" text-anchor="middle" font-size="10" fill="#2e7d32">.042</text>
+    <rect x="440" y="258" width="80" height="20" fill="#b8e0a3"/><text x="480" y="272" text-anchor="middle" font-size="10" fill="#2e7d32">.038</text>
+    <rect x="520" y="258" width="80" height="20" fill="#f0d35d"/><text x="560" y="272" text-anchor="middle" font-size="10" fill="#2e7d32">.068</text>
+    <rect x="600" y="258" width="80" height="20" fill="#85cb83"/><text x="640" y="272" text-anchor="middle" font-size="10" fill="#2e7d32">.024</text>
+  </g>
+  <!-- color scale -->
+  <text x="700" y="300" text-anchor="end" font-size="10">regret</text>
+  <rect x="200" y="296" width="80" height="10" fill="#7fc97f"/>
+  <rect x="280" y="296" width="80" height="10" fill="#cee6ad"/>
+  <rect x="360" y="296" width="80" height="10" fill="#f0d35d"/>
+  <rect x="440" y="296" width="80" height="10" fill="#f0a849"/>
+  <rect x="520" y="296" width="80" height="10" fill="#e85737"/>
+  <text x="200" y="318" font-size="9">0.02</text>
+  <text x="600" y="318" font-size="9">0.18</text>
+</svg>
+<p class="caption"><strong>Figure 3.</strong> Failure-mode heatmap: VUS-PR regret as a function of (selector &times; anomaly type). <span class="sim">All values simulated.</span> Green: low regret. Red: high regret. MS-PAS type-aware (highlighted row) is the only zero-label method with uniformly green-to-yellow cells. Contextual anomalies remain the hardest regime for every method, including MSAD, reflecting a fundamental limitation that no current TS-AD approach has resolved.</p>
+</div>
+
+<h3>7.3 Theoretical bound verification</h3>
+
+<div class="figbox">
+<svg viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Theory bound verification">
+  <!-- Axes -->
+  <line x1="80" y1="40" x2="80" y2="310" stroke="#222" stroke-width="1.2"/>
+  <line x1="80" y1="310" x2="600" y2="310" stroke="#222" stroke-width="1.2"/>
+  <text x="340" y="345" text-anchor="middle" font-size="12">Theoretical regret bound: 2L(&delta; + 2&sigma;) / &epsilon;</text>
+  <text x="25" y="180" text-anchor="middle" font-size="12" transform="rotate(-90 25,180)">Observed regret</text>
+  <!-- gridlines -->
+  <g font-size="10" fill="#666">
+    <line x1="80" y1="60" x2="600" y2="60" stroke="#eee"/>
+    <line x1="80" y1="125" x2="600" y2="125" stroke="#eee"/>
+    <line x1="80" y1="190" x2="600" y2="190" stroke="#eee"/>
+    <line x1="80" y1="255" x2="600" y2="255" stroke="#eee"/>
+    <text x="75" y="63" text-anchor="end">0.20</text>
+    <text x="75" y="128" text-anchor="end">0.15</text>
+    <text x="75" y="193" text-anchor="end">0.10</text>
+    <text x="75" y="258" text-anchor="end">0.05</text>
+    <text x="75" y="313" text-anchor="end">0.00</text>
+    <text x="80" y="325" text-anchor="middle">0</text>
+    <text x="210" y="325" text-anchor="middle">0.05</text>
+    <text x="340" y="325" text-anchor="middle">0.10</text>
+    <text x="470" y="325" text-anchor="middle">0.15</text>
+    <text x="600" y="325" text-anchor="middle">0.20</text>
+  </g>
+  <!-- diagonal y=x -->
+  <line x1="80" y1="310" x2="600" y2="40" stroke="#999" stroke-dasharray="4 4" stroke-width="1"/>
+  <text x="540" y="60" font-size="10" fill="#666">y = bound</text>
+  <!-- Scatter points: (predicted, observed). All below or near diagonal -->
+  <g fill="#c80000" fill-opacity="0.75">
+    <circle cx="100" cy="305" r="4"/>
+    <circle cx="115" cy="298" r="4"/>
+    <circle cx="135" cy="290" r="4"/>
+    <circle cx="150" cy="282" r="4"/>
+    <circle cx="165" cy="275" r="4"/>
+    <circle cx="180" cy="270" r="4"/>
+    <circle cx="200" cy="258" r="4"/>
+    <circle cx="220" cy="250" r="4"/>
+    <circle cx="245" cy="238" r="4"/>
+    <circle cx="270" cy="222" r="4"/>
+    <circle cx="290" cy="218" r="4"/>
+    <circle cx="320" cy="205" r="4"/>
+    <circle cx="345" cy="192" r="4"/>
+    <circle cx="370" cy="178" r="4"/>
+    <circle cx="400" cy="165" r="4"/>
+    <circle cx="425" cy="148" r="4"/>
+    <circle cx="450" cy="138" r="4"/>
+    <circle cx="475" cy="118" r="4"/>
+    <circle cx="500" cy="108" r="4"/>
+    <circle cx="525" cy="92" r="4"/>
+    <circle cx="550" cy="80" r="4"/>
+    <circle cx="580" cy="62" r="4"/>
+  </g>
+  <!-- regression line (loose envelope) -->
+  <line x1="80" y1="305" x2="595" y2="68" stroke="#a44" stroke-width="1.2"/>
+  <text x="220" y="170" font-size="10" fill="#a44">Observed = 0.86 &middot; Bound &minus; 0.004</text>
+  <text x="380" y="285" font-size="10" fill="#888">Below diagonal: bound holds</text>
+</svg>
+<p class="caption"><strong>Figure 4.</strong> Empirical verification of Theorem 1. <span class="sim">All values simulated.</span> Each point: one configuration of the controlled synthetic suite at a chosen (<em>&epsilon;</em>, <em>&delta;</em>, <em>&sigma;</em>) triple. X-axis: theoretical bound 2L(&delta;+2&sigma;)/&epsilon;. Y-axis: observed selection regret of MS-PAS. All points lie at or below the diagonal, confirming the bound. The linear fit slope of <span class="sim">0.86</span> suggests modest looseness; tightening would require sharper Lipschitz constants and is left to future work.</p>
+</div>
+
+<!-- ========================================================== -->
+<h2>8. Ablations and Failure-Mode Analysis</h2>
+
+<h3>8.1 Source contribution</h3>
+
+<table>
+<thead>
+  <tr>
+    <th>Variant</th>
+    <th>What is kept</th>
+    <th class="num">VUS-PR regret</th>
+    <th class="num">&Delta; vs full</th>
+  </tr>
+</thead>
+<tbody>
+  <tr><td>A1: LCO only</td><td>Source 1 only, Borda over (algo, C)</td><td class="num sim">.061</td><td class="num sim">+.018</td></tr>
+  <tr><td>A2: Synthetic only</td><td>Source 2 only, mean over 6 families</td><td class="num sim">.071</td><td class="num sim">+.028</td></tr>
+  <tr><td>A3: Residual only</td><td>Source 3 only</td><td class="num sim">.142</td><td class="num sim">+.099</td></tr>
+  <tr><td>A4: LCO + Synthetic, Borda</td><td>S1+S2, equal weights</td><td class="num sim">.052</td><td class="num sim">+.009</td></tr>
+  <tr><td>A5: All three, Plackett-Luce</td><td>S1+S2+S3, PL aggregation</td><td class="num sim">.048</td><td class="num sim">+.005</td></tr>
+  <tr style="background:#fff7d6;"><td><strong>A6: Full MS-PAS, type-aware</strong></td><td>S1+S2+S3 + type weighting</td><td class="num sim"><strong>.043</strong></td><td class="num sim">&mdash;</td></tr>
+  <tr><td>A7: LCO single granularity (C=8)</td><td>only one C value</td><td class="num sim">.057</td><td class="num sim">+.014</td></tr>
+  <tr><td>A8: LCO single algorithm (KMeans)</td><td>only one cluster algo</td><td class="num sim">.055</td><td class="num sim">+.012</td></tr>
+  <tr><td>A9: No difficulty stratification</td><td>all folds equal weight</td><td class="num sim">.058</td><td class="num sim">+.015</td></tr>
+  <tr><td>A10: Latent-domain LCO (autoencoder)</td><td>cluster in AE latent space</td><td class="num sim">.046</td><td class="num sim">+.003</td></tr>
+</tbody>
+</table>
+<p class="caption"><strong>Table 5.</strong> Ablation study. <span class="sim">All values simulated.</span> Source 3 alone replicates Ma &amp; Zhao [2023]'s negative finding for IPMs (residual stationarity alone is near-random, regret <span class="sim">.142</span>), but contributes meaningfully when combined (A4 &rarr; A5 gain of <span class="sim">.004</span>). Multi-granularity (A7) and multi-cluster-algorithm (A8) ensembling each contribute roughly <span class="sim">.012&ndash;.014</span> over single-config variants. Difficulty stratification (A9) is necessary; without it, regret regresses by <span class="sim">.015</span>. Latent-domain LCO (A10) is competitive with data-domain LCO; we report data-domain as the default for compute and interpretability.</p>
+
+<h3>8.2 Failure modes</h3>
+
+<p>We identify three regimes where MS-PAS underperforms (defined as regret &gt; <span class="sim">0.10</span>):</p>
+
+<ol>
+  <li><strong>Contextual anomalies on weakly seasonal data.</strong> When the dataset is locally smooth but globally aperiodic, cluster diagnostics return low compactness, the type estimator's prior is diffuse, and the type-aware combiner falls back to Plackett-Luce (A5). Observed in <span class="sim">12%</span> of UCR series. Mitigation: include seasonal-strength-conditioned source weights.</li>
+  <li><strong>Single-anomaly series with very short normal context.</strong> Some UCR series have &lt; 2000 normal points before the anomaly, insufficient for stable clustering at C&ge;8. LCO degenerates to noise. Observed in <span class="sim">5%</span> of series. Mitigation: confidence-triggered fallback to Source 2.</li>
+  <li><strong>Extreme cluster imbalance.</strong> When &gt; 80% of normal data falls in one cluster, the leave-one-cluster-out fold becomes trivial in one direction and impossible in the other. Observed in <span class="sim">3%</span> of synthetic and <span class="sim">2%</span> of real series. Difficulty stratification rejects most such folds; remaining cases trigger fallback.</li>
+</ol>
+
+<p>In aggregate, MS-PAS falls back to the default in <span class="sim">7.4%</span> of series. Among these, residual regret is <span class="sim">.072</span>, comparable to Goswami's <span class="sim">.076</span> on the full benchmark.</p>
+
+<h3>8.3 Source contribution by anomaly type</h3>
+
+<table>
+<thead>
+  <tr>
+    <th>Anomaly type</th>
+    <th>Source 1 (LCO) wt.</th>
+    <th>Source 2 (synth) wt.</th>
+    <th>Source 3 (residual) wt.</th>
+    <th>Comment</th>
+  </tr>
+</thead>
+<tbody>
+  <tr><td>Point</td><td class="sim">.21</td><td class="sim">.71</td><td class="sim">.08</td><td>Synthetic point-spike injection covers Q well.</td></tr>
+  <tr><td>Level shift</td><td class="sim">.42</td><td class="sim">.51</td><td class="sim">.07</td><td>Both sources contribute; level shift creates new mode.</td></tr>
+  <tr><td>Trend</td><td class="sim">.38</td><td class="sim">.49</td><td class="sim">.13</td><td>Residual signal informative for forecasting models.</td></tr>
+  <tr><td>Frequency</td><td class="sim">.35</td><td class="sim">.55</td><td class="sim">.10</td><td>Synthetic freq-shift injection is well-matched.</td></tr>
+  <tr><td>Contextual</td><td class="sim">.18</td><td class="sim">.62</td><td class="sim">.20</td><td>LCO weak; residual useful; remaining gap is open problem.</td></tr>
+  <tr><td>Mode-exclusion</td><td class="sim">.74</td><td class="sim">.20</td><td class="sim">.06</td><td>LCO is canonical signal for this type.</td></tr>
+</tbody>
+</table>
+<p class="caption"><strong>Table 6.</strong> Learned source weights <em>W</em>[type, source] (row-normalized). <span class="sim">All values simulated.</span> The type-aware combiner learns interpretable patterns: LCO dominates for mode-exclusion, synthetic injections for point/freq, with residuals upweighted only for contextual where temporal modeling matters.</p>
+
+<!-- ========================================================== -->
+<h2>9. Discussion</h2>
+
+<h3>9.1 Why does MS-PAS work?</h3>
+
+<p>Three forces drive the result. <strong>First</strong>, normal data carries structural information about the manifold <em>M</em>, and a candidate's behavior at the manifold boundary (probed by LCO) correlates with its behavior on out-of-manifold anomalies. <strong>Second</strong>, no single pseudo-anomaly family covers all anomaly types, but a structured mixture can. The type-aware weighting exploits the fact that normal-data diagnostics already reveal which anomaly types are <em>a priori</em> likely. <strong>Third</strong>, the AUC-difference quantity in Theorem 1 is robust to coverage error of order <em>&delta;</em>, which our mixture controls.</p>
+
+<h3>9.2 Why does it fail on contextual anomalies?</h3>
+
+<p>Contextual anomalies are by definition in-distribution globally and out-of-distribution locally. Cluster-based pseudo-anomalies (LCO) operate at the global level and miss this regime. Synthetic contextual injections help, but only if the dataset's seasonality is strong enough to support phase-swap injections. On weakly seasonal series, no current pseudo-anomaly family is informative. This is a fundamental limitation shared with MSAD and is not closed by any zero-label method we examined.</p>
+
+<h3>9.3 Relation to negative results of Ma &amp; Zhao [2023]</h3>
+
+<p>Ma &amp; Zhao's main claim, that stand-alone internal performance measures are no better than random, is replicated by our A3 ablation: Source 3 (residual stationarity + entropy) alone yields regret <span class="sim">.142</span>, vs random <span class="sim">.156</span>. Our contribution is to show that <em>combining</em> weak signals with a structurally novel signal (LCO) produces strong selection. Ma &amp; Zhao's result is therefore a statement about individual IPMs, not about the impossibility of unsupervised selection.</p>
+
+<h3>9.4 What does this mean for the field?</h3>
+
+<p>Three implications. (1) The <strong>practical bar</strong> for unsupervised AD selection should now be MS-PAS' regret of <span class="sim">.043</span>, not random or default. (2) The gap to meta-supervised selection (<span class="sim">.005</span> VUS-PR) is small enough to question the practical value of historical performance databases in the time-series regime. (3) The remaining failure mode (contextual anomalies) is a well-defined open problem that calls for a fundamentally different signal, likely tied to local temporal modeling rather than manifold geometry.</p>
+
+<!-- ========================================================== -->
+<h2>10. Limitations and Broader Impact</h2>
+
+<p><strong>Limitations.</strong> (i) Theorem 1 is a conditional bound; the conditions are not directly verifiable from normal data alone, though MS-PAS' confidence score is a useful proxy. (ii) Our benchmark, though the largest of its kind, still under-samples industrial scenarios with extreme contamination or non-stationary normal distributions. (iii) Deep candidate models are evaluated on a 200-series subset due to compute constraints; the generalization to larger candidate pools is supported by our ablation A6 (pool-size scan) but is not exhaustively tested. (iv) The type-aware combiner is trained on a synthetic suite; if real anomaly type distributions differ substantially from our six families, the weighting may be suboptimal.</p>
+
+<p><strong>Broader impact.</strong> AD systems are deployed in safety-critical settings (medical, infrastructure, fraud). A reliable unsupervised model-selection protocol reduces the risk that practitioners deploy poor detectors due to absent or unrepresentative labeled validation. Conversely, an over-trusted protocol could provide false confidence: we therefore emphasize the confidence score and the fallback-to-default policy as essential safety features.</p>
+
+<!-- ========================================================== -->
+<h2>11. Conclusion</h2>
+
+<p>We introduced MS-PAS, a normal-data-only model-selection protocol for time-series anomaly detection, built around three pseudo-anomaly sources (LCO, six synthetic perturbation families, prediction residuals) fused by an anomaly-type-aware combiner. MS-PAS achieves <span class="sim">.043</span> mean VUS-PR regret on a 790-series benchmark, beating all five zero-label competitors by <span class="sim">.033&ndash;.060</span> absolute. We accompany the empirical result with a selection-regret bound (Theorem 1) tied to manifold-margin and pseudo-anomaly-coverage conditions, and characterize the remaining failure modes (most notably contextual anomalies in weakly seasonal regimes). The implementation, frozen subset IDs, oracle hashes, and one-command reproduction are released.</p>
+
+<!-- ========================================================== -->
+<h2>12. References</h2>
+<div class="refs">
+<ol>
+  <li>Goswami, M., Challu, C., Callot, L., Minorics, L., Kan, A. <em>Unsupervised Model Selection for Time-Series Anomaly Detection.</em> ICLR 2023 (Oral). <a href="https://arxiv.org/abs/2210.01078">arXiv:2210.01078</a>.</li>
+  <li>Sylligardos, E., Boniol, P., Paparrizos, J., Trahanias, P., Palpanas, T. <em>Choose Wisely: An Extensive Evaluation of Model Selection for Anomaly Detection in Time Series.</em> PVLDB 16(11), 2023.</li>
+  <li>Le Clei, C., Pushak, Y., Zogaj, F., Owhadi Kareshk, M., Zohrevand, Z., Harlow, R., Moghadam, H., Hong, S., Chafi, H. <em>N-1 Experts: Unsupervised Anomaly Detection Model Selection.</em> AutoML-Conf 2022 LBW.</li>
+  <li>Idan, L. <em>Towards Unsupervised Validation of Anomaly-Detection Models.</em> ECAI 2024. <a href="https://arxiv.org/abs/2410.14579">arXiv:2410.14579</a>.</li>
+  <li>Marques, H.O., Campello, R.J.G.B., Sander, J., Zimek, A. <em>Internal Evaluation of Unsupervised Outlier Detection.</em> TKDD 14(4), 2020 (extended TKDD 2024).</li>
+  <li>ASOI authors. <em>ASOI: Anomaly Separation and Overlap Index for Unsupervised Anomaly Detection Evaluation.</em> Complex &amp; Intelligent Systems, 2025.</li>
+  <li>Zhao, Y., Rossi, R., Akoglu, L. <em>Automatic Unsupervised Outlier Model Selection.</em> NeurIPS 2021 (MetaOD).</li>
+  <li>Zhao, Y., Akoglu, L. <em>Toward Unsupervised Outlier Model Selection.</em> ICDM 2022 (ELECT).</li>
+  <li>Fung, C., Qiu, C., Li, A., Rudolph, M. <em>Model Selection of Anomaly Detectors in the Absence of Labeled Validation Data.</em> IEEE TAI, 2025. <a href="https://arxiv.org/abs/2310.10461">arXiv:2310.10461</a>.</li>
+  <li>Ma, M., Zhao, Y. <em>A Large-scale Study on Unsupervised Outlier Model Selection.</em> SIGKDD Explorations, 2023.</li>
+  <li>Schmidl, S., Wenig, P., Papenbrock, T. <em>Anomaly Detection in Time Series: A Comprehensive Evaluation.</em> PVLDB 15(9), 2022 (TimeEval).</li>
+  <li>Paparrizos, J., Kang, Y., Boniol, P., Tsay, R.S., Palpanas, T., Franklin, M.J. <em>TSB-UAD: An End-to-End Benchmark Suite for Univariate Time-Series Anomaly Detection.</em> PVLDB 15(8), 2022.</li>
+  <li>Wu, R., Keogh, E. <em>Current Time Series Anomaly Detection Benchmarks are Flawed and are Creating the Illusion of Progress.</em> IEEE TKDE, 2021 (UCR Anomaly Archive).</li>
+  <li>Liu, Q., Paparrizos, J. <em>The Elephant in the Room: Towards a Reliable Time-Series Anomaly Detection Paradigm.</em> NeurIPS 2024.</li>
+  <li>Paparrizos, J., Boniol, P., Palpanas, T., Tsay, R.S., Elmore, A., Franklin, M.J. <em>Volume Under the Surface (VUS) Metrics.</em> VLDBJ, 2025.</li>
+  <li>Tatbul, N., Lee, T.J., Zdonik, S., Alam, M., Gottschlich, J. <em>Precision and Recall for Time Series.</em> NeurIPS 2018 (range-based F1).</li>
+  <li>Jiang, M., Hou, C., Zheng, A., Han, S., Huang, H., Wen, Q., Hu, X., Zhao, Y. <em>ADGym: Design Choices for Deep Anomaly Detection.</em> NeurIPS 2023 D&amp;B Track.</li>
+  <li>Su, Y., Zhao, Y., Niu, C., Liu, R., Sun, W., Pei, D. <em>Robust Anomaly Detection for Multivariate Time Series through Stochastic Recurrent Neural Network.</em> KDD 2019 (OmniAnomaly / SMD).</li>
+  <li>Hundman, K., Constantinou, V., Laporte, C., Colwell, I., Soderstrom, T. <em>Detecting Spacecraft Anomalies Using LSTMs and Nonparametric Dynamic Thresholding.</em> KDD 2018 (SMAP/MSL).</li>
+</ol>
+</div>
+
+<!-- ========================================================== -->
+<h2>13. Appendix A: Implementation Details</h2>
+
+<h3>A.1 Full candidate pool</h3>
+
+<table>
+<thead><tr><th>Family</th><th>Library</th><th>Hyperparameters</th><th>Variants</th></tr></thead>
+<tbody>
+  <tr><td>Isolation Forest</td><td>sklearn</td><td>n_estimators &in; {50, 100, 200, 500}</td><td>4</td></tr>
+  <tr><td>LOF</td><td>sklearn</td><td>n_neighbors &in; {5, 10, 20, 50}</td><td>4</td></tr>
+  <tr><td>OCSVM</td><td>sklearn</td><td>nu &in; {0.01, 0.05, 0.1, 0.2}</td><td>4</td></tr>
+  <tr><td>KNN</td><td>pyod</td><td>k &in; {5, 10, 20, 50}, method=mean</td><td>4</td></tr>
+  <tr><td>PCA</td><td>pyod</td><td>n_components &in; {5, 10, 25, 50}</td><td>4</td></tr>
+  <tr><td>HBOS</td><td>pyod</td><td>n_bins &in; {10, 20, 50, 100}</td><td>4</td></tr>
+  <tr><td>COPOD</td><td>pyod</td><td>(none)</td><td>1</td></tr>
+  <tr><td>ECOD</td><td>pyod</td><td>(none)</td><td>1</td></tr>
+  <tr><td>EllipticEnv</td><td>sklearn</td><td>contamination &in; {0.01, 0.05, 0.1}</td><td>3</td></tr>
+  <tr><td>MatrixProfile</td><td>stumpy</td><td>m &in; {32, 64, 128, 256}</td><td>4</td></tr>
+  <tr><td>Seasonal-decomp</td><td>statsmodels</td><td>period &in; {12, 24, 168, auto}</td><td>4</td></tr>
+  <tr><td>ARIMA</td><td>statsmodels</td><td>(1,0,1), (2,0,1), (2,1,2)</td><td>3</td></tr>
+  <tr><td>LSTM-AE</td><td>ours / PyTorch</td><td>hidden &in; {32, 64}, layers &in; {1, 2}</td><td>4</td></tr>
+  <tr><td>TCN-AE</td><td>ours / PyTorch</td><td>channels &in; {32, 64}, kernel &in; {3, 5}</td><td>4</td></tr>
+  <tr><td>USAD</td><td>upstream</td><td>latent_size &in; {20, 40}</td><td>2</td></tr>
+  <tr><td><strong>Total</strong></td><td>&mdash;</td><td>&mdash;</td><td><strong>60</strong></td></tr>
+</tbody>
+</table>
+
+<h3>A.2 Clustering algorithm grid (for LCO)</h3>
+
+<table>
+<thead><tr><th>Algorithm</th><th>Library</th><th>Granularities C</th><th>Notes</th></tr></thead>
+<tbody>
+  <tr><td>KMeans</td><td>sklearn</td><td>2, 4, 8, 16, 32</td><td>Lloyd's algorithm, 10 restarts</td></tr>
+  <tr><td>Gaussian Mixture</td><td>sklearn</td><td>2, 4, 8, 16, 32</td><td>Full covariance</td></tr>
+  <tr><td>Agglomerative Ward</td><td>sklearn</td><td>2, 4, 8, 16, 32</td><td>Ward linkage</td></tr>
+  <tr><td>HDBSCAN</td><td>hdbscan</td><td>auto (min_cluster_size grid)</td><td>Density-based; C emergent</td></tr>
+  <tr><td>KShape</td><td>tslearn</td><td>2, 4, 8</td><td>Shape-based; expensive at large C</td></tr>
+</tbody>
+</table>
+
+<h3>A.3 Cross-validation and fairness protocol (LCO)</h3>
+
+<p>For each (cluster algo, C) pair:</p>
+<ol>
+  <li>Cluster the TSFresh-feature panel of <em>X<sub>N</sub></em> windows.</li>
+  <li>Drop clusters with &lt; 30 windows (fairness control 1).</li>
+  <li>For each remaining cluster <em>C<sub>j</sub></em>, compute the four difficulty diagnostics (d<sub>1</sub>, d<sub>2</sub>, d<sub>3</sub>, d<sub>4</sub>).</li>
+  <li>Drop folds with d<sub>4</sub> &gt; 0.95 (trivial, fairness control 2) or d<sub>4</sub> &lt; 0.55 (impossible, fairness control 3).</li>
+  <li>Stratify remaining folds into Easy / Medium / Hard buckets by d<sub>4</sub> quantile.</li>
+  <li>For each fold, train each candidate model on <em>X<sub>N</sub></em> \ <em>C<sub>j</sub></em>, score <em>C<sub>j</sub></em> (pseudo-anom.) and a held-out random slice of <em>X<sub>N</sub></em> \ <em>C<sub>j</sub></em> (pseudo-normal, equal size).</li>
+  <li>Compute AUC-PR per (model, fold).</li>
+  <li>Aggregate per-model AUC-PR across folds via difficulty-stratified mean (weight folds equally <em>within</em> each difficulty bucket, then average across buckets, so each bucket contributes equally).</li>
+  <li>Convert per-model AUCs to ranks within (cluster algo, C); aggregate ranks across (algo, C) by Borda count.</li>
+</ol>
+
+<p>This procedure ensures: (a) no fold dominates by size; (b) trivial and impossible folds do not flatten or noise-corrupt the ranking; (c) ranks rather than raw scores cross fold boundaries, avoiding scale-calibration issues.</p>
+
+<h3>A.4 Proof of Theorem 1 (sketch)</h3>
+
+<p>For each candidate <em>k</em>, expand AUC<sub>k</sub> &minus; AUC&#771;<sub>k</sub> as an expectation over score-difference indicator pairs. By Kantorovich-Rubinstein (Lipschitz duality of <em>W</em><sub>1</sub>), |E<sub>q ~ Q</sub> &phi;(q) &minus; E<sub>q ~ P&#771;</sub> &phi;(q)| &le; L<sub>&phi;</sub> W<sub>1</sub>(Q, P&#771;). Combined with (A2) <em>W</em><sub>1</sub>(<em>P&#771;</em>, <em>Q</em>) &le; <em>&delta;</em> and the L-Lipschitz score function, we obtain |AUC<sub>k</sub> &minus; AUC&#771;<sub>k</sub>| &le; L &delta; / D, where D is the typical score-gap. Under (A1) the score gap between a normal and an anomaly is bounded below by L &epsilon;. Applying the triangle inequality across two candidates and absorbing the &sigma;-perturbation contribution gives the claim. The full proof carefully tracks the asymmetric perturbation contributions of LCO (modes) vs synthetic injections (&sigma;-perturbations) and is provided in the supplementary material.</p>
+
+<h3>A.5 Compute environment and reproducibility</h3>
+
+<p>Hardware: single workstation, Intel Xeon (16 cores), NVIDIA RTX 2060 (6 GB VRAM), 32 GB RAM. Software: Python 3.11, PyTorch 2.x, scikit-learn 1.4, pyod, stumpy, hdbscan, tslearn, statsmodels. Wall clock for full benchmark reproduction: ~120 GPU hours (deep candidates) + ~50 CPU hours (classical + LCO inner loop, multiprocess 8 workers).</p>
+
+<p>All seeds are fixed; all dataset subsets are deterministic from configs/subsets/v1.yaml; the oracle table is hash-committed before any Stage-1 inspection. Full reproduction is one command: <code>make reproduce-all</code>.</p>
+
+<!-- ========================================================== -->
+<div class="sim-banner">
+  END OF BLUEPRINT. ALL NUMERICAL RESULTS ABOVE ARE SIMULATED AS TARGETS CONSISTENT WITH SECTION 13 OF <code>implementation plan.md</code>. REAL EXPERIMENTS WILL POPULATE THESE TABLES AND FIGURES.
+</div>
+
+</body>
+</html>
