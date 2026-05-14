@@ -32,7 +32,6 @@ Thumbs.db
 # Project artifacts
 data/
 datasets/
-models/
 checkpoints/
 results/
 runs/
@@ -46,6 +45,11 @@ logs/
 *.npz
 *.pkl
 *.parquet
+
+# Note: src/autoad/models/ is project source code, NOT gitignored
+
+# Vendored upstream repos (cloned at setup time)
+vendored/
 
 # Secrets
 .env
