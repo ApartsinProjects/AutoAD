@@ -719,13 +719,174 @@ After Phase 0, save the following memory entries:
 
 ---
 
-## 16. Immediate Next Steps (this week)
+## 16. Engineering Principles (locked, applied throughout)
+
+These principles apply to every phase. They are not negotiable; they exist to prevent the most common failure modes in research code (lost results, irreproducible runs, gratuitous recomputation).
+
+### 16.1 Artifact persistence: save everything reusable
+
+**Rule**: any intermediate computation that takes &gt; 30 seconds and could be reused must be persisted. Per-point predictions, cluster assignments, per-fold AUCs, per-source ranks, oracle scores, type-estimator predictions, and confidence values are all saved.
+
+**Storage layout** (under `runs/`):
+```
+runs/
+  oracle/                           # Phase 2: candidate × series oracle table
+    oracle_v1.parquet               # one row per (series, model_id, metric)
+    oracle_v1.sha256                # frozen hash, committed in Stage 1
+    per_point/{series_id}/{model_id}.parquet   # full score time series
+  features/                         # Phase 3: TSFresh + per-series diagnostics
+    tsfresh_v1/{series_id}.parquet
+    diagnostics_v1/{series_id}.parquet
+  clusters/                         # Phase 3: cluster assignments per (series, algo, C)
+    {series_id}/{algo}_{C}.parquet  # window_id -> cluster_id, difficulty diagnostics
+  lco_aucs/                         # Phase 3: per-fold AUCs from Source 1
+    {series_id}/{algo}_{C}/fold_{j}/aucs.parquet  # model_id -> AUC, difficulty
+  synth_aucs/                       # Phase 3: per-family AUCs from Source 2
+    {series_id}/{family}/{severity}.parquet
+  residual/                         # Phase 3: Source 3 outputs
+    {series_id}.parquet
+  ranks/                            # Phase 4: per-source ranks
+    {series_id}/source_{s}.parquet
+  selector_outputs/                 # Phase 4-5: each selector's pick + confidence
+    {selector_id}/{series_id}.parquet
+  regret/                           # Phase 6: regret values per (selector, series)
+    {selector_id}.parquet
+  manifests/                        # Per-run reproducibility manifest
+    {experiment_id}.yaml            # seeds, config hash, code git SHA, env hash, timestamps
+```
+
+**Persistence rules**:
+- Parquet for tabular outputs (faster than CSV; columnar; typed)
+- Per-point score time series stored under `runs/oracle/per_point/`. **Never** recompute oracle scores; metrics (VUS-PR, AUC-PR, range-F1, etc.) are recomputed from these on demand
+- Cluster assignments cached: `(series_id, algo, C, seed)` &rarr; partition labels. Recomputing k-means on 250 TSB-AD series takes 40 minutes; reading the cache takes seconds
+- TSFresh features extracted once per series; the operation is the slowest non-deep-model step (~3 minutes per series for the lightweight panel, hours for the full set). Cache aggressively
+- All artifacts include a `_meta` row: code SHA, config hash, RNG seeds, library versions, timestamp
+- Per-run manifest in `runs/manifests/{experiment_id}.yaml` lists every artifact produced
+
+**Schema discipline**: every parquet has a fixed schema version in its filename (e.g., `oracle_v1.parquet`). Schema changes bump the version, never overwrite. Old runs remain readable.
+
+### 16.2 Smoke tests at every phase
+
+Each phase ships with a smoke test that runs end-to-end in &lt; 5 minutes on a laptop. Smoke tests use a fixed minimal configuration:
+
+- **5 series** (1 from each of TSB-AD/UCR/SMD/synthetic-point/synthetic-mode-exclusion)
+- **3 candidate models** (IForest with n_estimators=50, LOF with k=10, Matrix Profile with m=64)
+- **1 hyperparameter setting** per model
+- **2 cluster algorithms** (KMeans, GMM) at **2 granularities** (C=4, C=8) for LCO
+- **3 synthetic families** (point, level shift, mode-exclusion) at **1 severity each**
+- **Fixed seed 42** everywhere
+
+Smoke tests are runnable as `pytest tests/smoke/test_phase_{N}.py` and as `make smoke-{N}`. They produce a `runs/smoke/phase_{N}/` directory mirroring the production layout but at minimal scale. Every smoke test asserts a set of invariants (Section 16.4) before declaring pass.
+
+| Phase | Smoke test file | Asserted invariants |
+|---|---|---|
+| 0 setup | `test_phase_0_smoke.py` | `BaseAD.fit(...).score(...)` round-trip works on 3 models; CI passes |
+| 1 data | `test_phase_1_smoke.py` | 5 series load with expected shapes; labels are 0/1 ints |
+| 2 oracle | `test_phase_2_smoke.py` | All 3 models score 5 series; per-point parquet files exist; VUS-PR in [0, 1] |
+| 3 sources | `test_phase_3_smoke.py` | LCO produces a rank per (series, model); ranks are valid permutations; synthetic AUCs in [0, 1]; difficulty diagnostics computed |
+| 4 selector | `test_phase_4_smoke.py` | Borda, Plackett-Luce, and type-aware combiners all produce a valid pick per series; confidence in [0, 1] |
+| 5 baselines | `test_phase_5_smoke.py` | All baselines (B0-B3, C1, C3, C6) produce picks on 5 series; matches Goswami's published number on 1 overlapping series within 0.02 |
+| 6 main exp | `test_phase_6_smoke.py` | Main results table produced; MS-PAS regret on smoke set &lt; Goswami; no NaNs |
+| 7 theory | `test_phase_7_smoke.py` | Theorem bound computable on synthetic; observed regret &le; bound on 90% of points |
+| 8 paper | `test_phase_8_smoke.py` | All figures and tables regenerate from `runs/` without errors |
+
+### 16.3 Sanity checks after every full experiment
+
+After each full-scale experiment run, a sanity-check script `scripts/sanity.py` is executed automatically. It compares the new run against expected invariants and, where available, against the prior run.
+
+**Universal checks** (every experiment):
+- No NaN, no inf, no all-zero metric columns
+- VUS-PR, AUC-PR, AUC-ROC all in [0, 1]
+- Per-series oracle table has exactly 60 rows
+- Selector picks always reference a valid `model_id` from the candidate pool
+- Confidence scores in [0, 1]
+
+**Phase-specific checks**:
+- **Phase 2 (oracle)**: oracle's best model on 5 reference series matches published numbers (within 0.02). Reference series and expected ranges baked into `tests/reference_oracle.yaml`.
+- **Phase 3 (LCO)**: per-difficulty-bucket monotonicity. Easy folds have higher AUC than Hard folds on average; this is a sanity check on difficulty stratification.
+- **Phase 4 (selector)**: MS-PAS type-aware regret &le; MS-PAS Borda regret on the smoke set (Borda is contained in type-aware).
+- **Phase 5 (baselines)**: random baseline regret &gt; default baseline regret (sanity: random is worse than a constant choice).
+- **Phase 6 (main)**: MS-PAS beats every zero-label competitor on the smoke set; if any competitor beats MS-PAS, halt and inspect.
+
+**Cross-run regression checks**: if a prior run exists in `runs/`, the sanity script computes overlap statistics:
+- Spearman correlation of per-series regret with prior run &gt; 0.95 (catastrophic divergence detection)
+- Top-1 selection agreement &gt; 0.85 (gross changes in selector behavior)
+- Failure cases: log series where new run disagrees significantly with prior; flag for manual review
+
+Sanity-check failure produces a one-line summary and a detailed `runs/sanity/{experiment_id}/report.html`. The pipeline does not auto-overwrite `runs/oracle/oracle_v1.parquet` if sanity fails; instead writes to `oracle_v1.candidate.parquet` and requires explicit promotion.
+
+### 16.4 Computational optimization: do not recompute
+
+The full pipeline must be **restart-safe**, **incrementally computable**, and **cache-aware**. Engineering rules:
+
+**Caching**:
+- TSFresh feature extraction: cache per (series_id, feature_set_version). 1 day amortized cost &rarr; seconds on rerun.
+- Cluster assignments: cache per (series_id, algo, C, seed, feature_version). KMeans on 50k windows takes minutes; cache hit reads in 100 ms.
+- Per-model fit on full normal split: cache per (series_id, model_id, hyperparam_hash, normal_split_hash). Reuse for LCO inner loop when the held-out cluster does not change the training set materially (we do not exploit this for purity, but the cache is there).
+- Score time series: cache per (series_id, model_id, hyperparam_hash). Never recompute.
+
+**Vectorization and parallelism**:
+- 60 candidates &times; 790 series is embarrassingly parallel. Use `joblib.Parallel(n_jobs=8)` for classical models; default backend is `loky` which is robust on Windows.
+- Deep models: batch across series within a single GPU pass where shapes permit. RTX 2060 6GB constrains batch size; use gradient checkpointing if needed.
+- Avoid Python loops over time points; use NumPy vectorized operations or Numba JIT for non-trivial inner loops.
+- Use `polars` over `pandas` for I/O-heavy aggregations; `pyarrow` for cross-process parquet handoff.
+- Use sparse representations for cluster-assignment matrices when C is large.
+
+**Library choices** (locked):
+- `pyod` for classical detectors (do not reimplement)
+- `stumpy` for Matrix Profile (C-optimized; orders of magnitude faster than naive)
+- `darts` for deep TS models (LSTM-AE, TCN-AE); their implementations are already efficient
+- `hdbscan` for density clustering (mature, C-extension)
+- `tslearn` for KShape and DTW-K-Means (Numba-accelerated)
+- `tsfresh` for feature extraction (parallelized)
+- `POT` (Python Optimal Transport) for Wasserstein-1 and MMD
+- `choix` for Plackett-Luce MLE (more stable than naive implementations)
+- `numba` for hot inner loops we cannot vectorize
+- `polars`, `pyarrow` for I/O
+- `mlflow` for experiment tracking (file-backed, no server needed)
+- `hydra` for config management
+- `joblib` for parallelism with caching support
+
+**Representations**:
+- Windows stored as fixed-shape `float32` NumPy arrays. `float32` halves memory vs `float64` with no impact on AD performance.
+- Per-point scores stored as `float32` parquet columns with zstd compression (lossless, ~5x smaller than uncompressed).
+- Cluster assignments as `uint16` (supports C &le; 65535, plenty).
+- Anomaly labels as `uint8` (0/1).
+- Diagnostics stored as wide-format parquet (one row per series, one column per diagnostic).
+
+**Restart safety**:
+- Every phase is a deterministic function of its inputs; outputs are written atomically (write to `.tmp` then rename).
+- Phase scripts check for existing outputs and skip already-computed work unless `--force` is passed.
+- Resume-from-checkpoint: a failed run can be restarted and will pick up from the last successful (series, model, fold) tuple based on the presence of output files.
+- Pipeline DAG is captured in `Makefile` and `dvc.yaml` (optional) so a single `make all` reproduces everything.
+
+**Compute budget enforcement**:
+- Each phase script logs its wall-clock time and peak memory.
+- A `compute_budget.yaml` file declares expected costs; deviations &gt; 2x abort with a warning.
+- This catches accidental recomputation: if Phase 2 was expected to take 8 hours but is taking 30, something is wrong (likely cache miss).
+
+### 16.5 Reproducibility and provenance
+
+Every artifact carries provenance metadata:
+- Code git SHA at time of generation
+- Config hash (Hydra config serialized to JSON, hashed)
+- RNG seeds (numpy, pytorch, sklearn) declared in config and logged
+- Library versions captured in `runs/manifests/{experiment_id}.lock`
+- Hardware fingerprint (CPU model, GPU model, total RAM) for compute-cost analysis
+
+The Stage-1 oracle freeze (Section 8.4) is enforced cryptographically:
+- After Stage 1, `runs/oracle/oracle_v1.parquet` is hashed (SHA-256) and the hash is committed to git in `oracle_v1.sha256.txt` before any Stage-2 inspection
+- Stage 3 verification recomputes the hash and confirms it matches; mismatch indicates oracle tampering and invalidates the run
+
+---
+
+## 17. Immediate Next Steps (this week)
 
 In order:
 
-1. User review and sign-off on this plan (especially Section 1 framing and Section 13 success gates).
+1. User review and sign-off on this plan (especially Section 1 framing, Section 13 success gates, and Section 16 engineering principles).
 2. Decide: solo project or invite a collaborator (theory or compute help).
-3. Phase 0 execution starts: `pyproject.toml`, repo skeleton, three reference models, CI.
-4. Phase 1 dataset download scripts.
+3. Phase 0 execution starts: `pyproject.toml`, repo skeleton, three reference models, CI, **smoke test framework** (`tests/smoke/`), **artifact-persistence harness** (`src/autoad/utils/io.py`, `src/autoad/utils/cache.py`).
+4. Phase 1 dataset download scripts plus Phase 1 smoke test.
 
 I will not proceed past sign-off without explicit go-ahead.
