@@ -9,7 +9,7 @@
 
 ## 0. TL;DR
 
-We build **MS-PAS** (Multi-Source Pseudo-Anomaly Selection), the first normal-data-only model-selection protocol for time-series anomaly detection that (i) introduces **Leave-Cluster-Out (LCO)** validation as a new pseudo-anomaly source, (ii) aggregates heterogeneous pseudo-anomaly signals (LCO at multiple granularities, six synthetic perturbation families, prediction-residual consistency) via anomaly-type-aware rank aggregation, (iii) provides a **selection-regret bound** under a stated manifold-margin condition, and (iv) demonstrates a **≥3% absolute VUS-PR regret reduction over every zero-label baseline** (Goswami ICLR 2023, N-1 Experts AutoML 2022, Idan ECAI 2024, IREOS-fast TKDD 2024, ASOI 2025) across TSB-UAD + UCR Anomaly Archive + controlled synthetic suites, with MSAD/Choose Wisely (PVLDB 2023) serving as the meta-supervised upper reference. The deliverable is one breakthrough-grade paper.
+We build **MS-PAS** (Multi-Source Pseudo-Anomaly Selection), the first normal-data-only model-selection protocol for time-series anomaly detection that (i) introduces **Leave-Cluster-Out (LCO)** validation as a new pseudo-anomaly source, (ii) aggregates heterogeneous pseudo-anomaly signals (LCO at multiple granularities, six synthetic perturbation families, prediction-residual consistency) via anomaly-type-aware rank aggregation, and (iii) demonstrates a **≥3% absolute VUS-PR regret reduction over every zero-label baseline** (Goswami ICLR 2023, N-1 Experts AutoML 2022, Idan ECAI 2024, IREOS-fast TKDD 2024, ASOI 2025) across TSB-AD + UCR Anomaly Archive + controlled synthetic suites, and beats the meta-supervised MSAD/Choose Wisely (PVLDB 2023) on out-of-distribution splits despite using no historical labels. The paper is purely empirical; we deliberately do not include a formal theorem. The deliverable is one breakthrough-grade paper.
 
 ---
 
@@ -25,7 +25,8 @@ We build **MS-PAS** (Multi-Source Pseudo-Anomaly Selection), the first normal-da
 |---|---|---|---|
 | Leave-Cluster-Out (LCO) validation for AD | **Yes (no published precedent)** | Cluster-based OOD eval exists in vision; AD selection uses synthetic injections only | Held-out normal subdomains as mode-exclusion pseudo-anomalies, multi-granularity, difficulty-stratified |
 | Multi-source pseudo-anomaly aggregation | **Yes (extends Goswami 2023)** | Goswami uses single synthetic-injection family + 2 internal measures, Borda aggregation | Six injection families + LCO at C in {2,4,8,16,32} + prediction-residual + ensemble-consensus, with anomaly-type-aware weighting |
-| Selection-regret bound | **Yes** | Ma & Zhao 2023 showed IPMs are no better than random; no positive theory exists | Bound: pseudo-anomaly AUC ε-covers real AUC under (a) manifold-margin and (b) pseudo-anomaly diversity conditions |
+<!-- Selection-regret bound row removed: theorem dropped from paper after pre-submission review concluded the conditional bound added more attack surface than argumentative value -->
+
 | Anomaly-type-aware selection | **Yes** | Existing selectors are anomaly-agnostic | Use cluster-holdout score distribution as a free diagnostic of likely anomaly type, weight sources accordingly |
 | Failure-mode characterization | Partial | Some negative results | Stratified analysis: which (dataset diagnostic, anomaly type) combinations break the method |
 
@@ -33,7 +34,7 @@ We build **MS-PAS** (Multi-Source Pseudo-Anomaly Selection), the first normal-da
 
 | # | Method | Citation | Core idea | Setting | Differentiation from MS-PAS |
 |---|---|---|---|---|---|
-| C1 | **Goswami et al.** | ICLR 2023 (Oral). arXiv 2210.01078 | Prediction error + centrality + injected synthetic anomalies, robust rank aggregation | Univariate + multivariate TS-AD, zero-label | Single synthetic-injection family; no LCO; no type-aware weighting; no theory. **We strictly contain their signal set.** |
+| C1 | **Goswami et al.** | ICLR 2023 (Oral). arXiv 2210.01078 | Prediction error + centrality + injected synthetic anomalies, robust rank aggregation | Univariate + multivariate TS-AD, zero-label | Single synthetic-injection family; no LCO; no type-aware weighting. **We strictly contain their signal set.** |
 | C2 | **MSAD / "Choose Wisely"** | Sylligardos, Boniol, Paparrizos, Trahanias, Palpanas. PVLDB 2023 | Supervised meta-model maps TS characteristics to best of 12 detectors on TSB-UAD | Univariate TS-AD, **meta-supervised** (needs labeled historical pool) | Different supervision regime. We do **single-dataset, zero-label**. Include as upper-reference baseline (they get to use labels we don't). |
 | C3 | **N-1 Experts** | Le Clei et al. AutoML-Conf 2022 LBW | For each candidate, use other N-1 detector predictions as pseudo-ground-truth | Algorithm-agnostic, zero-label | Pure consensus, no clustering, no targeted perturbation. We aggregate diverse pseudo-anomaly sources, not just detector agreement. |
 | C4 | **Idan (ECAI 2024)** | arXiv 2410.14579 | Collaborative-decision paradigm: detector agreements/disagreements as validation signal | Tabular-leaning, zero-label | Detector-consensus only, no manifold/normal-data structure use. |
@@ -441,11 +442,15 @@ Most ablations are absorbed into Phase 5's harness work. This phase finalizes th
 - [ ] Failure-mode tables stratified by anomaly type and series diagnostics
 - [ ] Paired-bootstrap significance vs each of C1, C3, C4, C5, C6
 
-### Phase 7 — Theory (Week 12, 07-31 to 08-06)
+### Phase 7 — Robustness analyses for reviewer-anticipated questions (Week 12, 07-31 to 08-06)
 
-- [ ] Formal statement and proof of selection-regret bound
-- [ ] Empirical verification on controlled synthetic suite (vary manifold margin, vary pseudo-anomaly diversity, plot regret vs bound)
-- [ ] Honest discussion of bound tightness
+The original Phase 7 (theoretical analysis with regret bound) is **dropped**. The theorem framing was assessed as adding more attack surface than argumentative value (assumptions not directly verifiable; comparable AD-selection papers Goswami ICLR 2023, MSAD PVLDB 2023, N-1 Experts AutoML 2022, Ma &amp; Zhao 2023 publish at top venues without theorems). The freed week is reallocated to pre-emptive robustness analyses that reviewers will ask for:
+
+- [ ] Confidence-score reliability: ROC of confidence predicting per-series regret &gt; 0.1
+- [ ] Normal-data predictors of selection regret (manifold compactness + source agreement diagnostics; Pearson correlation with per-series regret)
+- [ ] Per-family selection confusion matrix (audit for deep-model under-selection bias)
+- [ ] Type-distribution transfer robustness (W trained on biased mix, tested on uniform; and vice versa)
+- [ ] Within-&epsilon;-of-oracle probability metric for &epsilon; in {0.01, 0.025, 0.05, 0.10}
 
 ### Phase 8 — Paper draft (Weeks 13-14, 08-07 to 08-20)
 
@@ -505,8 +510,11 @@ AutoAD/
 │   │   ├── vus.py                  # vendored
 │   │   ├── metrics.py              # AUC-PR, AUC-ROC, range-F1
 │   │   └── regret.py
-│   ├── theory/
-│   │   └── bound.py                # numerical bound verification
+│   ├── robustness/                 # Phase 7 (was 'theory/' in earlier draft)
+│   │   ├── confidence_roc.py       # confidence-score ROC vs regret
+│   │   ├── within_epsilon.py       # P(regret <= eps) metric
+│   │   ├── family_confusion.py     # per-family selection audit
+│   │   └── type_transfer.py        # W-distribution transfer ablation
 │   └── utils/
 │       ├── tracking.py             # MLflow wrappers
 │       └── io.py
@@ -657,8 +665,8 @@ The project is a top-venue paper if **all** of (G1, G2, G3) and **most** of (G4-
 | G3 | Top-1 / Top-3 selection accuracy | Top-1 **≥ 30%**, Top-3 overlap **≥ 60%** out of 60 candidates |
 | G4 | Mean Spearman vs oracle | **≥ 0.50** averaged across datasets |
 | G5 | Gap to upper-reference (C2 MSAD) | report honestly; ideal **≤ 0.03 absolute regret** behind MSAD despite using no historical labels |
-| G6 | Failure-mode characterization | clear (anomaly type × diagnostic) cells where method fails, explained from theory |
-| G7 | Theory bound | at least one non-vacuous bound with empirical verification plot |
+| G6 | Failure-mode characterization | clear (anomaly type × diagnostic) cells where method fails, explained empirically |
+| G7 | Confidence-score reliability | confidence ROC AUC ≥ 0.70 predicting per-series regret > 0.10 |
 | G8 | Reproducibility | one-command reproduction; oracle hashes published; deterministic seeds |
 
 **Decision tree**:
@@ -693,13 +701,13 @@ The expanded baseline set (six full competitor ports) means **G2 is the highest-
    - Table 3: ablations (sources, granularity, representation)
    - Fig 5: failure-mode heatmap
 7. Discussion and limitations (0.5 page)
-8. Appendix: dataset details, hyperparameter grids, additional ablations, theory proofs
+8. Appendix: dataset details, hyperparameter grids, additional ablations, robustness analyses
 
 ### 14.3 Venue strategy
 
 - Primary: **KDD 2027** (Feb 2027 deadline). Time-series and ML systems fit.
 - Backup: **ICDM 2026** (June 2026 deadline) if results land by mid-May.
-- Stretch: **NeurIPS 2027** (May 2027 deadline) with stronger theory.
+- Stretch: **NeurIPS 2027** (May 2027 deadline) with additional cross-modality validation.
 - Workshop pre-submission: NeurIPS 2026 Time-Series Workshop (likely Sep 2026) for early feedback.
 
 ### 14.4 Reproducibility commitments
@@ -787,7 +795,7 @@ Smoke tests are runnable as `pytest tests/smoke/test_phase_{N}.py` and as `make 
 | 4 selector | `test_phase_4_smoke.py` | Borda, Plackett-Luce, and type-aware combiners all produce a valid pick per series; confidence in [0, 1] |
 | 5 baselines | `test_phase_5_smoke.py` | All baselines (B0-B3, C1, C3, C6) produce picks on 5 series; matches Goswami's published number on 1 overlapping series within 0.02 |
 | 6 main exp | `test_phase_6_smoke.py` | Main results table produced; MS-PAS regret on smoke set &lt; Goswami; no NaNs |
-| 7 theory | `test_phase_7_smoke.py` | Theorem bound computable on synthetic; observed regret &le; bound on 90% of points |
+| 7 robustness | `test_phase_7_smoke.py` | Confidence-score ROC AUC > 0.6 on smoke set; within-&epsilon; metric computable; per-family confusion matrix non-degenerate |
 | 8 paper | `test_phase_8_smoke.py` | All figures and tables regenerate from `runs/` without errors |
 
 ### 16.3 Sanity checks after every full experiment
@@ -885,7 +893,7 @@ The Stage-1 oracle freeze (Section 8.4) is enforced cryptographically:
 In order:
 
 1. User review and sign-off on this plan (especially Section 1 framing, Section 13 success gates, and Section 16 engineering principles).
-2. Decide: solo project or invite a collaborator (theory or compute help).
+2. Decide: solo project or invite a collaborator (compute help; theory help no longer needed since theorem dropped).
 3. Phase 0 execution starts: `pyproject.toml`, repo skeleton, three reference models, CI, **smoke test framework** (`tests/smoke/`), **artifact-persistence harness** (`src/autoad/utils/io.py`, `src/autoad/utils/cache.py`).
 4. Phase 1 dataset download scripts plus Phase 1 smoke test.
 

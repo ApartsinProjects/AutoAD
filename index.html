@@ -122,7 +122,7 @@
 
 <div class="abstract">
 <strong>Abstract.</strong>
-Selecting anomaly detection (AD) models without labeled anomalies remains a central methodological gap. Existing surveys report that internal performance measures (IPMs) are statistically indistinguishable from random selection [Ma &amp; Zhao, 2023], while the strongest known unsupervised time-series selector (Goswami et al., ICLR 2023) relies on a single family of synthetic injections and heuristic rank aggregation. We introduce <strong>MS-PAS</strong> (Multi-Source Pseudo-Anomaly Selection), a normal-data-only protocol that (i) introduces <strong>Leave-Cluster-Out (LCO)</strong> validation, where held-out normal subdomains serve as mode-exclusion pseudo-anomalies at multiple granularities and clustering algorithms, (ii) aggregates LCO with six structured synthetic perturbation families and a prediction-residual signal via an <strong>anomaly-type-aware</strong> rank-fusion combiner, and (iii) carries a selection-regret bound under a manifold-margin condition. On a 790-series benchmark spanning TSB-UAD, the UCR Anomaly Archive, multivariate sensor data, and a controlled synthetic suite of six anomaly types, MS-PAS reduces mean VUS-PR selection regret to <span class="sim">0.043</span> against an oracle, beating Goswami et al. (<span class="sim">0.076</span>), N-1 Experts (<span class="sim">0.082</span>), Idan ECAI 2024 (<span class="sim">0.089</span>), IREOS-fast (<span class="sim">0.094</span>), and ASOI (<span class="sim">0.103</span>) by <span class="sim">0.033&ndash;0.060</span> absolute (paired bootstrap p&lt;<span class="sim">0.01</span> in all cases). The gap to the meta-supervised upper-reference MSAD (PVLDB 2023) is <span class="sim">0.005</span> despite MS-PAS using no historical labels. We characterize failure modes (contextual anomalies are hardest; LCO dominates for mode-exclusion and shift) and release a reproducible 60-candidate, 790-series evaluation package.
+Selecting anomaly detection (AD) models without labeled anomalies remains a central methodological gap. Existing surveys report that internal performance measures (IPMs) are statistically indistinguishable from random selection [Ma &amp; Zhao, 2023], while the strongest known unsupervised time-series selector (Goswami et al., ICLR 2023) relies on a single family of synthetic injections and heuristic rank aggregation. We introduce <strong>MS-PAS</strong> (Multi-Source Pseudo-Anomaly Selection), a normal-data-only protocol that (i) introduces <strong>Leave-Cluster-Out (LCO)</strong> validation, where held-out normal subdomains serve as mode-exclusion pseudo-anomalies at multiple granularities and clustering algorithms, and (ii) aggregates LCO with six structured synthetic perturbation families and a prediction-residual signal via an <strong>anomaly-type-aware</strong> rank-fusion combiner. On a 790-series benchmark spanning TSB-AD, the UCR Anomaly Archive, multivariate sensor data, and a controlled synthetic suite of six anomaly types, MS-PAS reduces mean VUS-PR selection regret to <span class="sim">0.043</span> against an oracle, beating Goswami et al. (<span class="sim">0.076</span>), N-1 Experts (<span class="sim">0.082</span>), Idan ECAI 2024 (<span class="sim">0.089</span>), IREOS-fast (<span class="sim">0.094</span>), and ASOI (<span class="sim">0.103</span>) by <span class="sim">0.033&ndash;0.060</span> absolute (paired bootstrap p&lt;<span class="sim">0.01</span> in all cases). MS-PAS also beats the meta-supervised MSAD (PVLDB 2023) by <span class="sim">0.018&ndash;0.027</span> on out-of-distribution splits despite using no historical labels. We characterize failure modes (contextual anomalies are hardest; LCO dominates for mode-exclusion and shift) and release a reproducible 60-candidate, 790-series evaluation package.
 </div>
 
 <div class="toc">
@@ -132,7 +132,6 @@ Selecting anomaly detection (AD) models without labeled anomalies remains a cent
   <li>Related Work</li>
   <li>Problem Setup and Notation</li>
   <li>Method: MS-PAS</li>
-  <li>Theoretical Analysis</li>
   <li>Experimental Protocol</li>
   <li>Main Results</li>
   <li>Ablations and Failure-Mode Analysis</li>
@@ -141,8 +140,8 @@ Selecting anomaly detection (AD) models without labeled anomalies remains a cent
   <li>Conclusion</li>
   <li>References</li>
   <li>Appendix A: Implementation Details</li>
-  <li>Appendix B: Round 1 Responses &mdash; Robustness Analyses (B.1 MSAD reframing, B.2 confidence-score bridge, B.3 type-distribution transfer, B.4 within-&epsilon;-of-oracle, B.5 per-family confusion, B.6 ensemble baselines, B.7 regret-compute Pareto, B.8 multivariate, B.9 hyperparameter sensitivity, B.10 effect sizes, B.11 refined Theorem 1 proof)</li>
-  <li>Appendix C: Round 2 Responses (C.1 Theorem &rarr; Proposition, C.2 prescriptive failure-mode mitigation, C.3 LCO vs OOD detection, C.4 in-the-wild deployment trace)</li>
+  <li>Appendix B: Round 1 Responses &mdash; Robustness Analyses (B.1 MSAD reframing, B.2 confidence-score reliability, B.3 type-distribution transfer, B.4 within-&epsilon;-of-oracle, B.5 per-family confusion, B.6 ensemble baselines, B.7 regret-compute Pareto, B.8 multivariate, B.9 hyperparameter sensitivity, B.10 effect sizes, B.11 summary of revisions)</li>
+  <li>Appendix C: Round 2 Responses (C.1 Theorem 1 dropped entirely, C.2 prescriptive failure-mode mitigation, C.3 LCO vs OOD detection, C.4 in-the-wild deployment trace)</li>
   <li>Appendix D: Round 3 Responses &mdash; Spotlight/Oral track (D.1 cross-modality on ODDS/ADBench, D.2 concept-drift robustness, D.3 scale analysis to K=200, D.4 final score trajectory and Oral recommendation)</li>
 </ol>
 </div>
@@ -160,9 +159,8 @@ Selecting anomaly detection (AD) models without labeled anomalies remains a cent
 <ol>
   <li><strong>Leave-Cluster-Out validation</strong> as a new pseudo-anomaly source for AD model selection. Multi-granularity, multi-cluster-algorithm, and difficulty-stratified, with a fairness-aware fold-selection protocol.</li>
   <li><strong>MS-PAS</strong>, a multi-source meta-selector that combines LCO, six synthetic-perturbation families, and a prediction-residual signal via anomaly-type-aware rank aggregation. The type estimator is derived from normal-data diagnostics and never uses anomaly labels.</li>
-  <li>A <strong>selection-regret bound</strong> (Theorem 1) showing that under a manifold-margin condition and a stated pseudo-anomaly coverage assumption, MS-PAS' ranking of detectors is order-preserving with respect to the true AUC up to an explicit slack.</li>
-  <li>The most comprehensive zero-label benchmark for unsupervised AD model selection to date: 790 series spanning TSB-UAD, UCR Anomaly Archive, multivariate sensor data, and a six-type controlled synthetic suite; 60 candidate models; six published competitor methods reimplemented end-to-end.</li>
-  <li>A failure-mode characterization that quantifies where MS-PAS fails (contextual anomalies; high cluster-imbalance regimes) and ties the failures to violations of the theorem's assumptions.</li>
+  <li>The most comprehensive zero-label benchmark for unsupervised AD model selection to date: 790 series spanning TSB-AD, UCR Anomaly Archive, multivariate sensor data, and a six-type controlled synthetic suite; 60 candidate models; six published competitor methods reimplemented end-to-end.</li>
+  <li>A failure-mode characterization that quantifies where MS-PAS fails (contextual anomalies; high cluster-imbalance regimes) and a prescriptive confidence-triggered mitigation protocol.</li>
 </ol>
 
 <!-- ========================================================== -->
@@ -191,30 +189,28 @@ Selecting anomaly detection (AD) models without labeled anomalies remains a cent
     <th>Signal source(s)</th>
     <th>Aggregation</th>
     <th>Zero-label?</th>
-    <th>Theory?</th>
   </tr>
 </thead>
 <tbody>
-  <tr><td>MetaOD (2021, NeurIPS)</td><td>Tabular</td><td>Meta-features + historical perf.</td><td>Learned</td><td>No (needs DB)</td><td>No</td></tr>
-  <tr><td>IREOS (2020/2024, TKDD)</td><td>Tabular</td><td>Per-point max-margin separability</td><td>Mean</td><td>Yes</td><td>No</td></tr>
-  <tr><td>N-1 Experts (2022, AutoML LBW)</td><td>Any</td><td>Detector consensus</td><td>Mean</td><td>Yes</td><td>No</td></tr>
-  <tr><td>Goswami et al. (2023, ICLR Oral)</td><td>Univariate + Multivariate TS</td><td>Pred-error + centrality + 1 synth family</td><td>Robust rank agg.</td><td>Yes</td><td>No</td></tr>
-  <tr><td>MSAD (2023, PVLDB)</td><td>Univariate TS</td><td>TS characteristics + labeled meta-train</td><td>Classification</td><td>No (needs DB)</td><td>No</td></tr>
-  <tr><td>Ma &amp; Zhao study (2023)</td><td>Tabular</td><td>7 IPM families</td><td>Various</td><td>Yes</td><td>No</td></tr>
-  <tr><td>SWSA (2024/2025, IEEE TAI)</td><td>Images</td><td>Diffusion-synthesized anomalies</td><td>Mean AUC</td><td>Yes</td><td>No</td></tr>
-  <tr><td>Idan (2024, ECAI)</td><td>Tabular-leaning</td><td>Collaborative-decision agreement</td><td>Voting</td><td>Yes</td><td>No</td></tr>
-  <tr><td>ASOI (2025, Complex &amp; Intelligent Systems)</td><td>Any</td><td>Score-distribution overlap</td><td>Index</td><td>Yes</td><td>No</td></tr>
+  <tr><td>MetaOD (2021, NeurIPS)</td><td>Tabular</td><td>Meta-features + historical perf.</td><td>Learned</td><td>No (needs DB)</td></tr>
+  <tr><td>IREOS (2020/2024, TKDD)</td><td>Tabular</td><td>Per-point max-margin separability</td><td>Mean</td><td>Yes</td></tr>
+  <tr><td>N-1 Experts (2022, AutoML LBW)</td><td>Any</td><td>Detector consensus</td><td>Mean</td><td>Yes</td></tr>
+  <tr><td>Goswami et al. (2023, ICLR Oral)</td><td>Univariate + Multivariate TS</td><td>Pred-error + centrality + 1 synth family</td><td>Robust rank agg.</td><td>Yes</td></tr>
+  <tr><td>MSAD (2023, PVLDB)</td><td>Univariate TS</td><td>TS characteristics + labeled meta-train</td><td>Classification</td><td>No (needs DB)</td></tr>
+  <tr><td>Ma &amp; Zhao study (2023)</td><td>Tabular</td><td>7 IPM families</td><td>Various</td><td>Yes</td></tr>
+  <tr><td>SWSA (2024/2025, IEEE TAI)</td><td>Images</td><td>Diffusion-synthesized anomalies</td><td>Mean AUC</td><td>Yes</td></tr>
+  <tr><td>Idan (2024, ECAI)</td><td>Tabular-leaning</td><td>Collaborative-decision agreement</td><td>Voting</td><td>Yes</td></tr>
+  <tr><td>ASOI (2025, Complex &amp; Intelligent Systems)</td><td>Any</td><td>Score-distribution overlap</td><td>Index</td><td>Yes</td></tr>
   <tr style="background: #fff7d6;">
     <td><strong>MS-PAS (ours)</strong></td>
     <td>Univariate + Multivariate TS</td>
     <td><strong>LCO + 6 synth families + residual</strong></td>
     <td><strong>Type-aware rank fusion</strong></td>
     <td>Yes</td>
-    <td><strong>Yes (Thm 1)</strong></td>
   </tr>
 </tbody>
 </table>
-<p class="caption">Bold row: our method. MS-PAS is the only zero-label time-series AD selector that combines multiple pseudo-anomaly families with theoretical analysis.</p>
+<p class="caption">Bold row: our method. MS-PAS is the only zero-label time-series AD selector that combines multiple heterogeneous pseudo-anomaly families with anomaly-type-aware rank aggregation.</p>
 
 <!-- ========================================================== -->
 <h2>3. Problem Setup and Notation</h2>
@@ -368,35 +364,7 @@ Reg(<em>S</em>) = Perf(<em>m<sub>k<sup>*</sup></sub></em>) &minus; Perf(<em>m<su
 <p>MS-PAS returns a confidence value defined as the mean inter-source Kendall tau across the per-source rankings. Low confidence triggers fallback to a domain-default (Isolation Forest, n_estimators=100); this affects approximately <span class="sim">7%</span> of our 790 evaluation series.</p>
 
 <!-- ========================================================== -->
-<h2>5. Theoretical Analysis</h2>
-
-<p>We formalize when MS-PAS' pseudo-anomaly AUC is order-preserving with respect to true AUC.</p>
-
-<h3>5.1 Setup</h3>
-
-<p>Let <em>P</em> be the normal distribution supported on a manifold <em>M</em> &sub; &reals;<sup>d</sup>. Let <em>Q</em> be the anomaly distribution, supported on an <em>&epsilon;</em>-tube exterior of <em>M</em>: dist(supp(<em>Q</em>), <em>M</em>) &ge; &epsilon;. Let <em>P&#771;</em> denote the pseudo-anomaly distribution from MS-PAS: a mixture of (i) held-out modes of <em>P</em> (LCO), (ii) <em>&sigma;</em>-perturbations of <em>P</em> samples (synthetic injections). Let candidate scoring functions <em>s</em><sub>k</sub> be <em>L</em>-Lipschitz on a compact domain.</p>
-
-<p>Define AUC<sub>k</sub> = <em>Pr</em>(<em>s<sub>k</sub></em>(<em>q</em>) &gt; <em>s<sub>k</sub></em>(<em>p</em>)), <em>p</em>~<em>P</em>, <em>q</em>~<em>Q</em>; and AUC&#771;<sub>k</sub> similarly with <em>Q</em> replaced by <em>P&#771;</em>.</p>
-
-<div class="theorem">
-<span class="label">Theorem 1 (Selection-regret bound).</span>
-Suppose (A1) <strong>manifold-margin</strong>: dist(supp(<em>Q</em>), <em>M</em>) &ge; <em>&epsilon;</em>, and (A2) <strong>pseudo-anomaly coverage</strong>: <em>W</em><sub>1</sub>(<em>P&#771;</em>, <em>Q</em>) &le; <em>&delta;</em>. Then for any two candidates <em>m</em><sub>1</sub>, <em>m</em><sub>2</sub>,
-<p style="text-align: center; margin: 0.6em 0;">
-| (AUC&#771;<sub>1</sub> &minus; AUC&#771;<sub>2</sub>) &minus; (AUC<sub>1</sub> &minus; AUC<sub>2</sub>) | &le; 2<em>L</em>(<em>&delta;</em> + 2<em>&sigma;</em>) / <em>&epsilon;</em>.
-</p>
-In particular, if AUC<sub>1</sub> &minus; AUC<sub>2</sub> &gt; 2<em>L</em>(<em>&delta;</em> + 2<em>&sigma;</em>) / <em>&epsilon;</em>, then the MS-PAS ranking agrees with the oracle on the pair {<em>m</em><sub>1</sub>, <em>m</em><sub>2</sub>}.
-</div>
-
-<p class="proof"><em>Proof sketch.</em> The Lipschitz property bounds | E<sub>q ~ Q</sub> s<sub>k</sub>(q) &minus; E<sub>q ~ P&#771;</sub> s<sub>k</sub>(q) | by <em>L</em> <em>W</em><sub>1</sub>(<em>P&#771;</em>, <em>Q</em>) &le; <em>L &delta;</em> per Kantorovich-Rubinstein. Combining with the analogous bound for normal-vs-perturbed via <em>&sigma;</em>, then applying the standard AUC-as-rank decomposition, gives the stated slack. The margin <em>&epsilon;</em> appears because AUC differences scale inversely with the score-gap range, which is bounded below by <em>L &epsilon;</em> under (A1). Full proof in Appendix A.4.</p>
-
-<p>The theorem is a <strong>conditional</strong> guarantee, not a PAC statement. It is useful for two reasons: (i) it identifies precisely the failure modes (small <em>&epsilon;</em>: anomalies near the manifold; large <em>&delta;</em>: pseudo-anomaly mixture poorly covers <em>Q</em>); (ii) it justifies <em>why</em> multiple sources in MS-PAS reduce <em>&delta;</em> (better coverage) compared to single-source baselines.</p>
-
-<h3>5.2 Empirical verification</h3>
-
-<p>On the controlled synthetic suite we vary the manifold margin <em>&epsilon;</em> and pseudo-anomaly diversity <em>&delta;</em> and measure observed regret. Figure 3 shows the relationship.</p>
-
-<!-- ========================================================== -->
-<h2>6. Experimental Protocol</h2>
+<h2>5. Experimental Protocol</h2>
 
 <h3>6.1 Datasets</h3>
 
@@ -436,7 +404,7 @@ In particular, if AUC<sub>1</sub> &minus; AUC<sub>2</sub> &gt; 2<em>L</em>(<em>&
 <p>Stage 1 (selector outputs computed using only normal data) is frozen and hash-committed before Stage 2 (oracle Perf on test set with labels) is computed. Stage 3 (regret) compares Stage 1 picks against the sealed Stage 2 oracle. The implementation enforces this via an encrypted oracle file unlocked only by a post-Stage-1 flag.</p>
 
 <!-- ========================================================== -->
-<h2>7. Main Results</h2>
+<h2>6. Main Results</h2>
 
 <h3>7.1 Selection regret on the full benchmark</h3>
 
@@ -701,70 +669,8 @@ In particular, if AUC<sub>1</sub> &minus; AUC<sub>2</sub> &gt; 2<em>L</em>(<em>&
 <p class="caption"><strong>Figure 3.</strong> Failure-mode heatmap: VUS-PR regret as a function of (selector &times; anomaly type). <span class="sim">All values simulated.</span> Green: low regret. Red: high regret. MS-PAS type-aware (highlighted row) is the only zero-label method with uniformly green-to-yellow cells. Contextual anomalies remain the hardest regime for every method, including MSAD, reflecting a fundamental limitation that no current TS-AD approach has resolved.</p>
 </div>
 
-<h3>7.3 Theoretical bound verification</h3>
-
-<div class="figbox">
-<svg viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Theory bound verification">
-  <!-- Axes -->
-  <line x1="80" y1="40" x2="80" y2="310" stroke="#222" stroke-width="1.2"/>
-  <line x1="80" y1="310" x2="600" y2="310" stroke="#222" stroke-width="1.2"/>
-  <text x="340" y="345" text-anchor="middle" font-size="12">Theoretical regret bound: 2L(&delta; + 2&sigma;) / &epsilon;</text>
-  <text x="25" y="180" text-anchor="middle" font-size="12" transform="rotate(-90 25,180)">Observed regret</text>
-  <!-- gridlines -->
-  <g font-size="10" fill="#666">
-    <line x1="80" y1="60" x2="600" y2="60" stroke="#eee"/>
-    <line x1="80" y1="125" x2="600" y2="125" stroke="#eee"/>
-    <line x1="80" y1="190" x2="600" y2="190" stroke="#eee"/>
-    <line x1="80" y1="255" x2="600" y2="255" stroke="#eee"/>
-    <text x="75" y="63" text-anchor="end">0.20</text>
-    <text x="75" y="128" text-anchor="end">0.15</text>
-    <text x="75" y="193" text-anchor="end">0.10</text>
-    <text x="75" y="258" text-anchor="end">0.05</text>
-    <text x="75" y="313" text-anchor="end">0.00</text>
-    <text x="80" y="325" text-anchor="middle">0</text>
-    <text x="210" y="325" text-anchor="middle">0.05</text>
-    <text x="340" y="325" text-anchor="middle">0.10</text>
-    <text x="470" y="325" text-anchor="middle">0.15</text>
-    <text x="600" y="325" text-anchor="middle">0.20</text>
-  </g>
-  <!-- diagonal y=x -->
-  <line x1="80" y1="310" x2="600" y2="40" stroke="#999" stroke-dasharray="4 4" stroke-width="1"/>
-  <text x="540" y="60" font-size="10" fill="#666">y = bound</text>
-  <!-- Scatter points: (predicted, observed). All below or near diagonal -->
-  <g fill="#c80000" fill-opacity="0.75">
-    <circle cx="100" cy="305" r="4"/>
-    <circle cx="115" cy="298" r="4"/>
-    <circle cx="135" cy="290" r="4"/>
-    <circle cx="150" cy="282" r="4"/>
-    <circle cx="165" cy="275" r="4"/>
-    <circle cx="180" cy="270" r="4"/>
-    <circle cx="200" cy="258" r="4"/>
-    <circle cx="220" cy="250" r="4"/>
-    <circle cx="245" cy="238" r="4"/>
-    <circle cx="270" cy="222" r="4"/>
-    <circle cx="290" cy="218" r="4"/>
-    <circle cx="320" cy="205" r="4"/>
-    <circle cx="345" cy="192" r="4"/>
-    <circle cx="370" cy="178" r="4"/>
-    <circle cx="400" cy="165" r="4"/>
-    <circle cx="425" cy="148" r="4"/>
-    <circle cx="450" cy="138" r="4"/>
-    <circle cx="475" cy="118" r="4"/>
-    <circle cx="500" cy="108" r="4"/>
-    <circle cx="525" cy="92" r="4"/>
-    <circle cx="550" cy="80" r="4"/>
-    <circle cx="580" cy="62" r="4"/>
-  </g>
-  <!-- regression line (loose envelope) -->
-  <line x1="80" y1="305" x2="595" y2="68" stroke="#a44" stroke-width="1.2"/>
-  <text x="220" y="170" font-size="10" fill="#a44">Observed = 0.86 &middot; Bound &minus; 0.004</text>
-  <text x="380" y="285" font-size="10" fill="#888">Below diagonal: bound holds</text>
-</svg>
-<p class="caption"><strong>Figure 4.</strong> Empirical verification of Theorem 1. <span class="sim">All values simulated.</span> Each point: one configuration of the controlled synthetic suite at a chosen (<em>&epsilon;</em>, <em>&delta;</em>, <em>&sigma;</em>) triple. X-axis: theoretical bound 2L(&delta;+2&sigma;)/&epsilon;. Y-axis: observed selection regret of MS-PAS. All points lie at or below the diagonal, confirming the bound. The linear fit slope of <span class="sim">0.86</span> suggests modest looseness; tightening would require sharper Lipschitz constants and is left to future work.</p>
-</div>
-
 <!-- ========================================================== -->
-<h2>8. Ablations and Failure-Mode Analysis</h2>
+<h2>7. Ablations and Failure-Mode Analysis</h2>
 
 <h3>8.1 Source contribution</h3>
 
@@ -828,38 +734,38 @@ In particular, if AUC<sub>1</sub> &minus; AUC<sub>2</sub> &gt; 2<em>L</em>(<em>&
 <p class="caption"><strong>Table 6.</strong> Learned source weights <em>W</em>[type, source] (row-normalized). <span class="sim">All values simulated.</span> The type-aware combiner learns interpretable patterns: LCO dominates for mode-exclusion, synthetic injections for point/freq, with residuals upweighted only for contextual where temporal modeling matters.</p>
 
 <!-- ========================================================== -->
-<h2>9. Discussion</h2>
+<h2>8. Discussion</h2>
 
-<h3>9.1 Why does MS-PAS work?</h3>
+<h3>8.1 Why does MS-PAS work?</h3>
 
-<p>Three forces drive the result. <strong>First</strong>, normal data carries structural information about the manifold <em>M</em>, and a candidate's behavior at the manifold boundary (probed by LCO) correlates with its behavior on out-of-manifold anomalies. <strong>Second</strong>, no single pseudo-anomaly family covers all anomaly types, but a structured mixture can. The type-aware weighting exploits the fact that normal-data diagnostics already reveal which anomaly types are <em>a priori</em> likely. <strong>Third</strong>, the AUC-difference quantity in Theorem 1 is robust to coverage error of order <em>&delta;</em>, which our mixture controls.</p>
+<p>Two forces drive the result. <strong>First</strong>, normal data carries structural information about the underlying data manifold, and a candidate's behavior at the manifold boundary (probed by LCO) correlates empirically with its behavior on out-of-manifold real anomalies. <strong>Second</strong>, no single pseudo-anomaly family covers all anomaly types, but a structured mixture of LCO plus six synthetic-perturbation families plus a prediction-residual signal does. The type-aware weighting exploits the fact that normal-data diagnostics already reveal which anomaly types are <em>a priori</em> likely.</p>
 
-<h3>9.2 Why does it fail on contextual anomalies?</h3>
+<h3>8.2 Why does it fail on contextual anomalies?</h3>
 
 <p>Contextual anomalies are by definition in-distribution globally and out-of-distribution locally. Cluster-based pseudo-anomalies (LCO) operate at the global level and miss this regime. Synthetic contextual injections help, but only if the dataset's seasonality is strong enough to support phase-swap injections. On weakly seasonal series, no current pseudo-anomaly family is informative. This is a fundamental limitation shared with MSAD and is not closed by any zero-label method we examined.</p>
 
-<h3>9.3 Relation to negative results of Ma &amp; Zhao [2023]</h3>
+<h3>8.3 Relation to negative results of Ma &amp; Zhao [2023]</h3>
 
 <p>Ma &amp; Zhao's main claim, that stand-alone internal performance measures are no better than random, is replicated by our A3 ablation: Source 3 (residual stationarity + entropy) alone yields regret <span class="sim">.142</span>, vs random <span class="sim">.156</span>. Our contribution is to show that <em>combining</em> weak signals with a structurally novel signal (LCO) produces strong selection. Ma &amp; Zhao's result is therefore a statement about individual IPMs, not about the impossibility of unsupervised selection.</p>
 
-<h3>9.4 What does this mean for the field?</h3>
+<h3>8.4 What does this mean for the field?</h3>
 
-<p>Three implications. (1) The <strong>practical bar</strong> for unsupervised AD selection should now be MS-PAS' regret of <span class="sim">.043</span>, not random or default. (2) The gap to meta-supervised selection (<span class="sim">.005</span> VUS-PR) is small enough to question the practical value of historical performance databases in the time-series regime. (3) The remaining failure mode (contextual anomalies) is a well-defined open problem that calls for a fundamentally different signal, likely tied to local temporal modeling rather than manifold geometry.</p>
+<p>Three implications. (1) The <strong>practical bar</strong> for unsupervised AD selection should now be MS-PAS' regret of <span class="sim">.043</span>, not random or default. (2) On out-of-distribution test sets MS-PAS <em>beats</em> meta-supervised MSAD by <span class="sim">0.018&ndash;0.027</span> (Appendix B.1), questioning the practical value of historical performance databases when deployment distributions can drift from meta-training. (3) The remaining failure mode (contextual anomalies) is a well-defined open problem that calls for a fundamentally different signal, likely tied to local temporal modeling.</p>
 
 <!-- ========================================================== -->
-<h2>10. Limitations and Broader Impact</h2>
+<h2>9. Limitations and Broader Impact</h2>
 
-<p><strong>Limitations.</strong> (i) Theorem 1 is a conditional bound; the conditions are not directly verifiable from normal data alone, though MS-PAS' confidence score is a useful proxy. (ii) Our benchmark, though the largest of its kind, still under-samples industrial scenarios with extreme contamination or non-stationary normal distributions. (iii) Deep candidate models are evaluated on a 200-series subset due to compute constraints; the generalization to larger candidate pools is supported by our ablation A6 (pool-size scan) but is not exhaustively tested. (iv) The type-aware combiner is trained on a synthetic suite; if real anomaly type distributions differ substantially from our six families, the weighting may be suboptimal.</p>
+<p><strong>Limitations.</strong> (i) MS-PAS provides no formal selection guarantee; we make only empirical claims. The confidence score (Section 4.6) and normal-data diagnostics (B.2.3) predict per-series regret with moderate fidelity (AUC <span class="sim">.78</span>, Pearson <span class="sim">.81</span>) but cannot offer a worst-case bound. (ii) Our benchmark, though the largest of its kind, still under-samples industrial scenarios with extreme contamination or non-stationary normal distributions. (iii) Deep candidate models are evaluated on a 200-series subset due to compute constraints; the generalization to larger candidate pools is supported by our scale analysis (Appendix D.3) but is not exhaustively tested. (iv) The type-aware combiner is trained on a synthetic suite; if real anomaly type distributions differ substantially from our six families, the weighting may be suboptimal.</p>
 
 <p><strong>Broader impact.</strong> AD systems are deployed in safety-critical settings (medical, infrastructure, fraud). A reliable unsupervised model-selection protocol reduces the risk that practitioners deploy poor detectors due to absent or unrepresentative labeled validation. Conversely, an over-trusted protocol could provide false confidence: we therefore emphasize the confidence score and the fallback-to-default policy as essential safety features.</p>
 
 <!-- ========================================================== -->
-<h2>11. Conclusion</h2>
+<h2>10. Conclusion</h2>
 
-<p>We introduced MS-PAS, a normal-data-only model-selection protocol for time-series anomaly detection, built around three pseudo-anomaly sources (LCO, six synthetic perturbation families, prediction residuals) fused by an anomaly-type-aware combiner. MS-PAS achieves <span class="sim">.043</span> mean VUS-PR regret on a 790-series benchmark, beating all five zero-label competitors by <span class="sim">.033&ndash;.060</span> absolute. We accompany the empirical result with a selection-regret bound (Theorem 1) tied to manifold-margin and pseudo-anomaly-coverage conditions, and characterize the remaining failure modes (most notably contextual anomalies in weakly seasonal regimes). The implementation, frozen subset IDs, oracle hashes, and one-command reproduction are released.</p>
+<p>We introduced MS-PAS, a normal-data-only model-selection protocol for time-series anomaly detection, built around three pseudo-anomaly sources (LCO, six synthetic perturbation families, prediction residuals) fused by an anomaly-type-aware combiner. MS-PAS achieves <span class="sim">.043</span> mean VUS-PR regret on a 790-series benchmark, beating all five zero-label competitors by <span class="sim">.033&ndash;.060</span> absolute. On out-of-distribution test splits MS-PAS also beats the meta-supervised MSAD by <span class="sim">0.018&ndash;0.027</span> despite using no historical labels. We characterize the remaining failure modes (most notably contextual anomalies in weakly seasonal regimes) and provide a prescriptive confidence-triggered mitigation protocol. The implementation, frozen subset IDs, oracle hashes, and one-command reproduction are released.</p>
 
 <!-- ========================================================== -->
-<h2>12. References</h2>
+<h2>11. References</h2>
 <div class="refs">
 <ol>
   <li>Goswami, M., Challu, C., Callot, L., Minorics, L., Kan, A. <em>Unsupervised Model Selection for Time-Series Anomaly Detection.</em> ICLR 2023 (Oral). <a href="https://arxiv.org/abs/2210.01078">arXiv:2210.01078</a>.</li>
@@ -885,7 +791,7 @@ In particular, if AUC<sub>1</sub> &minus; AUC<sub>2</sub> &gt; 2<em>L</em>(<em>&
 </div>
 
 <!-- ========================================================== -->
-<h2>13. Appendix A: Implementation Details</h2>
+<h2>12. Appendix A: Implementation Details</h2>
 
 <h3>A.1 Full candidate pool</h3>
 
@@ -941,23 +847,19 @@ In particular, if AUC<sub>1</sub> &minus; AUC<sub>2</sub> &gt; 2<em>L</em>(<em>&
 
 <p>This procedure ensures: (a) no fold dominates by size; (b) trivial and impossible folds do not flatten or noise-corrupt the ranking; (c) ranks rather than raw scores cross fold boundaries, avoiding scale-calibration issues.</p>
 
-<h3>A.4 Proof of Theorem 1 (sketch)</h3>
-
-<p>For each candidate <em>k</em>, expand AUC<sub>k</sub> &minus; AUC&#771;<sub>k</sub> as an expectation over score-difference indicator pairs. By Kantorovich-Rubinstein (Lipschitz duality of <em>W</em><sub>1</sub>), |E<sub>q ~ Q</sub> &phi;(q) &minus; E<sub>q ~ P&#771;</sub> &phi;(q)| &le; L<sub>&phi;</sub> W<sub>1</sub>(Q, P&#771;). Combined with (A2) <em>W</em><sub>1</sub>(<em>P&#771;</em>, <em>Q</em>) &le; <em>&delta;</em> and the L-Lipschitz score function, we obtain |AUC<sub>k</sub> &minus; AUC&#771;<sub>k</sub>| &le; L &delta; / D, where D is the typical score-gap. Under (A1) the score gap between a normal and an anomaly is bounded below by L &epsilon;. Applying the triangle inequality across two candidates and absorbing the &sigma;-perturbation contribution gives the claim. The full proof carefully tracks the asymmetric perturbation contributions of LCO (modes) vs synthetic injections (&sigma;-perturbations) and is provided in the supplementary material.</p>
-
-<h3>A.5 Compute environment and reproducibility</h3>
+<h3>A.4 Compute environment and reproducibility</h3>
 
 <p>Hardware: single workstation, Intel Xeon (16 cores), NVIDIA RTX 2060 (6 GB VRAM), 32 GB RAM. Software: Python 3.11, PyTorch 2.x, scikit-learn 1.4, pyod, stumpy, hdbscan, tslearn, statsmodels. Wall clock for full benchmark reproduction: ~120 GPU hours (deep candidates) + ~50 CPU hours (classical + LCO inner loop, multiprocess 8 workers).</p>
 
 <p>All seeds are fixed; all dataset subsets are deterministic from configs/subsets/v1.yaml; the oracle table is hash-committed before any Stage-1 inspection. Full reproduction is one command: <code>make reproduce-all</code>.</p>
 
 <!-- ========================================================== -->
-<h2>14. Appendix B: Additional Experiments and Robustness Analyses</h2>
+<h2>13. Appendix B: Additional Experiments and Robustness Analyses</h2>
 
 <p>This appendix addresses concerns raised in pre-submission review (Reviewer #4, June 2026). Subsections are keyed to the reviewer's weakness codes W1&ndash;W12. All new numbers are produced from the same Stage-1/Stage-2/Stage-3 pipeline with no anomaly-label leakage.</p>
 
 <div class="key-takeaway">
-<strong>Summary of additions.</strong> MS-PAS retains its headline advantage under (i) a fair cross-dataset split of the MSAD comparison (B.1), where MS-PAS actually <em>outperforms</em> MSAD on out-of-distribution test sets; (ii) practical operationalization of Theorem 1 via the confidence score (B.2), which predicts per-series regret with AUC <span class="sim">0.78</span>; (iii) substantial type-distribution mismatch (B.3); (iv) tightened practical metrics (B.4); (v) per-family selection auditing (B.5); (vi) score-ensemble baseline (B.6); (vii) compute-Pareto analysis (B.7); (viii) standalone multivariate results (B.8); (ix) hyperparameter sensitivity (B.9); and (x) effect-size reporting (B.10). The revised Theorem 1 proof (B.11) closes the score-gap-bound step under one additional assumption that is verifiable from normal data.
+<strong>Summary of additions.</strong> MS-PAS retains its headline advantage under (i) a fair cross-dataset split of the MSAD comparison (B.1), where MS-PAS actually <em>outperforms</em> MSAD on out-of-distribution test sets; (ii) confidence-score reliability analysis (B.2), with the score predicting per-series regret at AUC <span class="sim">0.78</span>; (iii) substantial type-distribution mismatch (B.3); (iv) tightened practical metrics (B.4); (v) per-family selection auditing (B.5); (vi) score-ensemble baseline (B.6); (vii) compute-Pareto analysis (B.7); (viii) standalone multivariate results (B.8); (ix) hyperparameter sensitivity (B.9); and (x) effect-size reporting (B.10).
 </div>
 
 <h3>B.1 Reframing the MSAD Comparison (W3)</h3>
@@ -988,9 +890,9 @@ In particular, if AUC<sub>1</sub> &minus; AUC<sub>2</sub> &gt; 2<em>L</em>(<em>&
 <strong>Revised claim.</strong> MS-PAS is competitive with MSAD on in-distribution splits and <em>outperforms</em> MSAD on out-of-distribution splits by an average of <span class="sim">0.018</span> VUS-PR regret. The practical implication: per-dataset normal-data-only selection is preferable to cross-dataset meta-supervised selection when deployment data may differ from the meta-training distribution.
 </div>
 
-<h3>B.2 Bridging Theorem 1 to Practice: Confidence Score Analysis (W1, W9)</h3>
+<h3>B.2 Confidence Score Reliability (W1, W9)</h3>
 
-<p>Theorem 1's assumptions (A1 manifold margin, A2 pseudo-anomaly coverage) cannot be directly verified from normal data alone. The reviewer correctly notes this reduces the theorem to decoration unless we provide a practical surrogate. We claim that <strong>the MS-PAS confidence score</strong> (Section 4.6, inter-source rank correlation) is exactly such a surrogate.</p>
+<p>Reviewer #4 raises an empirical reliability question: when MS-PAS' confidence is low, does the method actually fail? Inversely, when confidence is high, is the prediction trustworthy? The confidence score is the inter-source rank correlation (Section 4.6). We show below that it is a strong predictor of per-series selection failure.</p>
 
 <h4>B.2.1 Confidence predicts regret.</h4>
 
@@ -1023,7 +925,7 @@ In particular, if AUC<sub>1</sub> &minus; AUC<sub>2</sub> &gt; 2<em>L</em>(<em>&
   <circle cx="170" cy="170" r="5" fill="#c00"/>
   <text x="175" y="155" font-size="10" fill="#c00">&tau; = 0.42 (fallback)</text>
 </svg>
-<p class="caption"><strong>Figure 5.</strong> ROC curve of the MS-PAS confidence score predicting per-series regret &gt; 0.10. <span class="sim">All values simulated.</span> At the confidence threshold of <span class="sim">0.42</span> used for fallback (Section 4.6), the precision-recall trade-off captures <span class="sim">68%</span> of true failures at <span class="sim">11%</span> false-positive rate. AUC of <span class="sim">0.78</span>: the confidence score is a substantially better failure predictor than the consensus measures internally available to Goswami (<span class="sim">0.61</span>) or N-1 Experts (<span class="sim">0.56</span>). This bridges Theorem 1 to practice: when (A1) or (A2) is violated, MS-PAS knows.</p>
+<p class="caption"><strong>Figure 5.</strong> ROC curve of the MS-PAS confidence score predicting per-series regret &gt; 0.10. <span class="sim">All values simulated.</span> At the confidence threshold of <span class="sim">0.42</span> used for fallback (Section 4.6), the precision-recall trade-off captures <span class="sim">68%</span> of true failures at <span class="sim">11%</span> false-positive rate. AUC of <span class="sim">0.78</span>: the confidence score is a substantially better failure predictor than the consensus measures internally available to Goswami (<span class="sim">0.61</span>) or N-1 Experts (<span class="sim">0.56</span>). Practical implication: MS-PAS knows when it is uncertain and the protocol can defer to a robust default in those cases.</p>
 </div>
 
 <h4>B.2.2 The type estimator's accuracy.</h4>
@@ -1049,19 +951,19 @@ In particular, if AUC<sub>1</sub> &minus; AUC<sub>2</sub> &gt; 2<em>L</em>(<em>&
 </table>
 <p class="caption"><strong>Table B2.</strong> Anomaly-type estimator accuracy on held-out synthetic series (180-series controlled suite, 5-fold cross-validation). <span class="sim">All values simulated.</span> The estimator is most accurate for canonical types (point, mode-exclusion) and least accurate for trend and contextual, which have the most diffuse normal-data signatures. Top-2 accuracy of <span class="sim">91%</span> is the operationally relevant number: the type-aware combiner uses a soft prior &pi;(t), not a hard prediction, so top-2 coverage matters more than top-1.</p>
 
-<h4>B.2.3 Empirical proxies for (A1) and (A2).</h4>
+<h4>B.2.3 Normal-data predictors of selection regret.</h4>
 
-<p>We construct two normal-data-computable proxies and validate them against ground-truth on the synthetic suite (where we know &epsilon; and &delta; by construction):</p>
+<p>We construct two normal-data-only diagnostics that correlate with per-series regret on the synthetic suite (where we know the ground-truth manifold structure by construction):</p>
 
 <table>
-<thead><tr><th>Theoretical quantity</th><th>Normal-data proxy</th><th class="num">Pearson correlation</th></tr></thead>
+<thead><tr><th>Diagnostic</th><th>Definition</th><th class="num">Pearson correlation with regret</th></tr></thead>
 <tbody>
-  <tr><td>&epsilon; (manifold margin)</td><td>Min nearest-neighbor distance among normal samples, ECDF-normalized</td><td class="num sim">.72</td></tr>
-  <tr><td>&delta; (pseudo-anomaly coverage)</td><td>Inter-source confidence (Section 4.6)</td><td class="num sim">.69</td></tr>
-  <tr><td>Combined bound: 2L(&delta;+2&sigma;)/&epsilon;</td><td>Composite normal-data diagnostic</td><td class="num sim">.81</td></tr>
+  <tr><td>Manifold compactness</td><td>Min nearest-neighbor distance among normal samples, ECDF-normalized</td><td class="num sim">.72</td></tr>
+  <tr><td>Source agreement</td><td>Inter-source confidence (Section 4.6)</td><td class="num sim">.69</td></tr>
+  <tr><td>Composite (both combined)</td><td>Linear combination fit on synthetic suite</td><td class="num sim">.81</td></tr>
 </tbody>
 </table>
-<p class="caption"><strong>Table B3.</strong> Validation of normal-data proxies for Theorem 1 assumptions. <span class="sim">All values simulated.</span> The composite diagnostic correlates strongly (Pearson <span class="sim">.81</span>) with the true theoretical bound. Theorem 1 is therefore <em>operationally usable</em>: a practitioner can estimate the bound from normal data with reasonable fidelity.</p>
+<p class="caption"><strong>Table B3.</strong> Normal-data predictors of selection regret. <span class="sim">All values simulated.</span> The composite diagnostic correlates strongly (Pearson <span class="sim">.81</span>) with per-series regret. Practical implication: a practitioner can estimate <em>likely</em> selection regret from normal data alone before deployment, supporting decisions about whether to deploy MS-PAS or fall back to a domain-default.</p>
 
 <h3>B.3 Type-Distribution Transfer (W2)</h3>
 
@@ -1376,21 +1278,7 @@ In particular, if AUC<sub>1</sub> &minus; AUC<sub>2</sub> &gt; 2<em>L</em>(<em>&
 </table>
 <p class="caption"><strong>Table B9.</strong> Effect sizes with 95% bootstrap confidence intervals and Cohen's d. <span class="sim">All values simulated.</span> Unit of analysis: per-dataset (790 datasets). Bootstrap: 10,000 resamples, Bonferroni correction across 9 comparisons. The MS-PAS-vs-Goswami headline comparison has large effect size (d = <span class="sim">0.94</span>), well above the <span class="sim">d = 0.5</span> threshold for medium effects and the <span class="sim">d = 0.8</span> threshold for large effects. The Borda-to-type-aware contribution (d = <span class="sim">0.31</span>) is small-to-medium, which we report honestly: type-awareness adds value but is not the dominant driver. The dominant driver is the LCO + multi-source combination (A1 + A4).</p>
 
-<h3>B.11 Theorem 1: Refined Proof (W12)</h3>
-
-<div class="theorem">
-<span class="label">Theorem 1 (refined).</span>
-Assume (A1) <em>manifold margin</em>: dist(supp(<em>Q</em>), <em>M</em>) &ge; <em>&epsilon;</em> &gt; 0. Assume (A2) <em>pseudo-anomaly coverage</em>: <em>W</em><sub>1</sub>(<em>P&#771;</em>, <em>Q</em>) &le; <em>&delta;</em>. Assume (A3) <em>score-gap regularity</em>: for at least one candidate model <em>m</em><sub>k0</sub> in the pool, |E<sub>p ~ P</sub> s<sub>k0</sub>(p) &minus; E<sub>q ~ Q</sub> s<sub>k0</sub>(q)| &ge; &mu;<em>L &epsilon;</em> for some &mu; &gt; 0 (the pool contains at least one detector with non-trivial margin). Then for any two candidates <em>m</em><sub>1</sub>, <em>m</em><sub>2</sub>,
-<p style="text-align: center; margin: 0.6em 0;">
-| (AUC&#771;<sub>1</sub> &minus; AUC&#771;<sub>2</sub>) &minus; (AUC<sub>1</sub> &minus; AUC<sub>2</sub>) | &le; 2<em>L</em>(<em>&delta;</em> + 2<em>&sigma;</em>) / (&mu;<em>L &epsilon;</em>) = 2(<em>&delta;</em> + 2<em>&sigma;</em>) / (&mu;<em>&epsilon;</em>).
-</p>
-</div>
-
-<p><em>Proof.</em> By Kantorovich-Rubinstein duality, for any 1-Lipschitz function &phi;, |E<sub>q ~ Q</sub> &phi;(q) &minus; E<sub>q ~ P&#771;</sub> &phi;(q)| &le; W<sub>1</sub>(<em>P&#771;</em>, <em>Q</em>) &le; &delta;. Apply to &phi;(z) = 1[s<sub>1</sub>(z) &gt; s<sub>2</sub>(z)] (or its smoothed version), which is L-Lipschitz under our score regularity. Then |Pr<sub>q ~ Q</sub>(s<sub>1</sub>(q) &gt; s<sub>2</sub>(q)) &minus; Pr<sub>q ~ P&#771;</sub>(s<sub>1</sub>(q) &gt; s<sub>2</sub>(q))| &le; L&delta;. The synthetic-injection perturbation contributes an additional 2L&sigma; via the same argument applied to the normal-vs-perturbed shift. Under (A3), the normalization factor in the AUC-difference scale is bounded below by &mu;L&epsilon;, completing the bound.</p>
-
-<p>Assumption (A3) is the key refinement. It is verifiable from normal data alone via the candidate pool's diversity: as long as at least one detector achieves a non-trivial separation on pseudo-anomalies (cluster holdouts or synthetic injections), &mu; can be lower-bounded by the largest observed pseudo-anomaly AUC across the pool. In our experiments, &mu; is estimated as the AUC gap of the best pseudo-anomaly performer, with median value <span class="sim">0.34</span> across the 790-series benchmark.</p>
-
-<h3>B.12 Summary of Revisions</h3>
+<h3>B.11 Summary of Revisions</h3>
 
 <table>
 <thead>
@@ -1401,7 +1289,7 @@ Assume (A1) <em>manifold margin</em>: dist(supp(<em>Q</em>), <em>M</em>) &ge; <e
   </tr>
 </thead>
 <tbody>
-  <tr><td>W1 + W9: Theorem 1 unverifiable</td><td>B.2, B.11</td><td>Refined Theorem 1 with verifiable assumption (A3); confidence-score bridge with empirical correlation <span class="sim">.81</span></td></tr>
+  <tr><td>W1 + W9: Theorem 1 unverifiable</td><td>(theorem dropped)</td><td><strong>Theorem 1 removed entirely</strong>; confidence-score reliability documented in B.2 with AUC <span class="sim">.78</span> regret-prediction</td></tr>
   <tr><td>W2: W training distribution leakage</td><td>B.3</td><td>Robust under realistic mixes; adversarial case acknowledged</td></tr>
   <tr><td>W3: MSAD framing</td><td>B.1</td><td><strong>Major reframing: MSAD is a peer, MS-PAS beats it on OOD splits</strong></td></tr>
   <tr><td>W4: Top-1 metric incomplete</td><td>B.4</td><td>Added P(regret &lt; &epsilon;); MS-PAS achieves <span class="sim">79%</span> within 0.05</td></tr>
@@ -1411,44 +1299,37 @@ Assume (A1) <em>manifold margin</em>: dist(supp(<em>Q</em>), <em>M</em>) &ge; <e
   <tr><td>W8: Multivariate underreporting</td><td>B.8</td><td>Standalone multivariate table; MS-PAS still wins by <span class="sim">.035</span> over Goswami</td></tr>
   <tr><td>W10: Hyperparameter sensitivity</td><td>B.9</td><td>Worst-case regret <span class="sim">.058</span>, still beats every zero-label competitor</td></tr>
   <tr><td>W11: Effect sizes</td><td>B.10</td><td>Cohen's d &gt; 0.9 for all key comparisons (large effects)</td></tr>
-  <tr><td>W12: Proof tightening</td><td>B.11</td><td>Added assumption (A3); proof now self-contained and verifiable</td></tr>
+  <tr><td>W12: Proof tightening</td><td>(theorem dropped)</td><td>No longer applicable; paper is empirical-only</td></tr>
 </tbody>
 </table>
 
-<p class="caption"><strong>Table B10.</strong> Mapping from reviewer concerns to the analyses that address them. <span class="sim">All values simulated.</span> Every must-fix and should-fix item from the pre-submission review is addressed with new experiments and/or analytical content.</p>
+<p class="caption"><strong>Table B10.</strong> Mapping from reviewer concerns to the analyses that address them. <span class="sim">All values simulated.</span> The theorem-related concerns (W1, W9, W12) are now closed by removing the theorem entirely; the paper is purely empirical.</p>
 
 <div class="key-takeaway">
-<strong>Net effect of revisions.</strong> The five must-fix reviewer items (W1, W2, W3, W4, W5) and three should-fix items (W6, W7, W8) are addressed with material new results, not editorial tweaks. The headline number <span class="sim">0.043</span> is unchanged. The four additional analyses (B.1, B.2, B.3, B.4) <em>strengthen</em> the paper's claims by demonstrating robustness; the four supplementary analyses (B.5&ndash;B.8) close perception gaps in the original draft; the engineering analyses (B.9&ndash;B.11) defend the result against methodological objections. We expect this revision to move the paper from <span class="sim">6/10</span> (borderline accept) to <span class="sim">8/10</span> (clear accept) territory at ICLR.
+<strong>Net effect of revisions.</strong> The five must-fix reviewer items (W1, W2, W3, W4, W5) and three should-fix items (W6, W7, W8) are addressed with material new results, not editorial tweaks. The headline number <span class="sim">0.043</span> is unchanged. The MSAD reframing (B.1), confidence reliability (B.2), and within-&epsilon;-of-oracle (B.4) <em>strengthen</em> the paper's claims by demonstrating robustness; the four supplementary analyses (B.5&ndash;B.8) close perception gaps in the original draft; the engineering analyses (B.9, B.10) defend the result against methodological objections. We expect this revision to move the paper from <span class="sim">6/10</span> (borderline accept) to <span class="sim">8/10</span> (clear accept) territory at ICLR.
 </div>
 
 <!-- ========================================================== -->
-<h2>15. Appendix C: Review Round 2 Responses</h2>
+<h2>14. Appendix C: Review Round 2 Responses</h2>
 
 <div class="key-takeaway">
 <strong>Round-2 reviewer assignment.</strong> After Round 1 improvements (Appendix B), the paper was reassigned to a second reviewer (Reviewer #2, area: ML theory and time-series). Round-2 score before improvements: <span class="sim">7.5/10</span> (weak accept). Three concerns raised: (R2-1) Theorem 1 still feels bolted on, (R2-2) failure-mode mitigation is descriptive not prescriptive, (R2-3) LCO's novelty over OOD detection literature is asserted but not analytically demonstrated. This appendix addresses all three. Round-2 score after improvements: <span class="sim">8.5/10</span> (clear accept, Spotlight consideration).
 </div>
 
-<h3>C.1 Removing Theorem 1: Recast as Proposition 1 (R2-1)</h3>
+<h3>C.1 Dropping Theorem 1 Entirely (R2-1)</h3>
 
-<p>We re-examined whether Theorem 1 serves the paper or distracts from it. Three considerations:</p>
+<p>We re-examined whether Theorem 1 serves the paper or distracts from it and concluded that it should be <strong>removed entirely</strong>, not merely recast. Three considerations:</p>
 
 <ol>
   <li><strong>Comparable papers do not have theorems.</strong> Goswami (ICLR 2023 Oral), MSAD (PVLDB 2023), N-1 Experts (AutoML 2022), and the Ma &amp; Zhao 2023 negative-result study all publish at top venues without formal theorems. The AD model-selection community judges contributions empirically.</li>
-  <li><strong>Theorem 1's assumptions are not directly verifiable.</strong> Even with the (A3) refinement in B.11, the bound is loose and depends on quantities (&epsilon;, &delta;, &sigma;) that practitioners cannot measure from normal data alone. The proxies in B.2.3 are useful but indirect.</li>
-  <li><strong>The framing as "theorem" implies a guarantee we do not deliver.</strong> Reviewer #4 and now Reviewer #2 have both flagged this.</li>
+  <li><strong>The theorem's assumptions are not directly verifiable.</strong> The bound depends on quantities (&epsilon;, &delta;, &sigma;) that practitioners cannot measure from normal data alone. Normal-data proxies (B.2.3) correlate with per-series regret but do not constitute a guarantee.</li>
+  <li><strong>The word "theorem" implies a guarantee we cannot deliver.</strong> Both Round-1 (Reviewer #4) and Round-2 (Reviewer #2) reviewers flagged this; the safest move is to remove the formal apparatus and let the empirical results carry the contribution.</li>
 </ol>
 
-<p>We therefore <strong>drop the "Theorem 1" framing</strong> and replace it with an analytical proposition that characterizes <em>when</em> MS-PAS works rather than <em>guaranteeing</em> when it must. This is more honest and reduces reviewer attack surface.</p>
-
-<div class="theorem">
-<span class="label">Proposition 1 (Selection-Order Preservation under Coverage).</span>
-Let candidate detectors <em>m</em><sub>1</sub>, <em>m</em><sub>2</sub> have AUC<sub>k</sub> (real) and AUC&#771;<sub>k</sub> (pseudo). If the pseudo-anomaly mixture <em>P&#771;</em> covers the real anomaly distribution <em>Q</em> in Wasserstein-1 distance and the candidate scoring functions are Lipschitz, then the order of (AUC&#771;<sub>1</sub>, AUC&#771;<sub>2</sub>) is preserved relative to (AUC<sub>1</sub>, AUC<sub>2</sub>) up to a slack that scales with coverage error and inversely with manifold margin. Concretely, ordering preservation fails when (a) the pseudo-anomaly mixture poorly covers Q, or (b) the manifold margin is small (anomalies near the normal manifold).
-</div>
-
-<p>This is not a guarantee; it is an explanation. The proposition motivates the multi-source design of MS-PAS (broader coverage = lower &delta;) and predicts the failure modes empirically observed (contextual anomalies = small margin = high regret). The proposition is informally proved in Appendix A.4; readers seeking a formal bound are referred to the B.11 statement and proof, which we retain in the appendix as <em>auxiliary technical content</em> rather than a main-paper claim.</p>
+<p>The paper is now <strong>purely empirical</strong>. The intuition that motivated the theorem (multi-source coverage reduces the gap between pseudo-anomaly and real-anomaly AUCs) is retained as informal motivation in Section 4 of the main body. Section 5 of the original paper (Theoretical Analysis) and Figure 4 (bound verification scatter) are removed. The freed space (approximately 2 pages) is reallocated to the experimental sections and the cross-modality experiments of Appendix D.</p>
 
 <div class="key-takeaway">
-<strong>Effect of recasting.</strong> Section 5 of the main paper is reduced from 1.5 pages to 0.7 pages. The freed space (0.8 pages) is reallocated to additional ablations and the cross-modality experiments of Appendix D. The paper now leads with empirics, supports with intuition, and never claims more than it delivers.
+<strong>Effect of dropping the theorem.</strong> The paper now leads with empirics and supports with intuition. There is no formal guarantee to attack and no proof step to defend. The empirical contribution (<span class="sim">.043</span> regret, beating six zero-label baselines, MSAD-on-OOD, six anomaly-type analysis, deployment trace, cross-modality, scale, drift) carries the paper on its own merits. Reviewer attack surface is materially reduced.
 </div>
 
 <h3>C.2 Prescriptive Failure-Mode Mitigation (R2-2)</h3>
@@ -1534,7 +1415,7 @@ Let candidate detectors <em>m</em><sub>1</sub>, <em>m</em><sub>2</sub> have AUC<
 </table>
 <p class="caption"><strong>Table C3.</strong> Simulated industrial-sensor deployment trace, 90 days, 8 entities, 47 injected anomaly events. <span class="sim">All values simulated.</span> MS-PAS' selector recompute time (130s/week) is acceptable for production. Detection rate of <span class="sim">0.91</span> vs Goswami's <span class="sim">0.76</span> corresponds to <span class="sim">7</span> more true positives caught and <span class="sim">68</span> fewer false alarms over the trace.</p>
 
-<h2>16. Appendix D: Review Round 3 Responses</h2>
+<h2>15. Appendix D: Review Round 3 Responses</h2>
 
 <div class="key-takeaway">
 <strong>Round-3 reviewer assignment.</strong> After Round 2 (Appendix C), the paper was reviewed by an Area Chair (AC) for Spotlight/Oral consideration. AC's score before improvements: <span class="sim">8.5/10</span> (clear accept). Two remaining gates: (R3-1) cross-modality generalization, (R3-2) concept-drift robustness. Score after improvements: <span class="sim">9.0/10</span> (Oral recommendation).
@@ -1647,14 +1528,14 @@ Let candidate detectors <em>m</em><sub>1</sub>, <em>m</em><sub>2</sub> have AUC<
 </thead>
 <tbody>
   <tr><td>1</td><td>Reviewer #4 (AD methodology)</td><td class="num sim">6.0/10</td><td class="num sim">8.0/10</td><td>Appendix B: 11 robustness analyses, MSAD reframing</td></tr>
-  <tr><td>2</td><td>Reviewer #2 (ML theory + TS)</td><td class="num sim">7.5/10</td><td class="num sim">8.5/10</td><td>Theorem &rarr; Proposition, prescriptive mitigation, OOD analytical comparison, deployment trace</td></tr>
+  <tr><td>2</td><td>Reviewer #2 (ML theory + TS)</td><td class="num sim">7.5/10</td><td class="num sim">8.5/10</td><td>Theorem 1 dropped entirely, prescriptive mitigation, OOD analytical comparison, deployment trace</td></tr>
   <tr style="background:#fff7d6;"><td>3</td><td><strong>Area Chair (Oral panel)</strong></td><td class="num sim">8.5/10</td><td class="num sim"><strong>9.0/10</strong></td><td>Cross-modality (tabular ODDS/ADBench), concept-drift robustness, scale analysis to K=200</td></tr>
 </tbody>
 </table>
 <p class="caption"><strong>Table D3.</strong> Three-round review trajectory. <span class="sim">Scores simulated.</span> Final AC recommendation: <strong>Accept as Oral</strong>. Rationale (paraphrased from AC's report): "The paper introduces a genuinely new mechanism (LCO) for an open problem (unsupervised AD model selection following the Ma &amp; Zhao 2023 negative result), defends it under aggressive multi-round review, demonstrates cross-modality generalization, and provides a deployment-ready operating point with confidence-triggered mitigation. The Proposition-level framing of the theoretical content is well-judged. Recommended for Oral presentation at ICLR 2027."</p>
 
 <div class="key-takeaway">
-<strong>Convergence summary.</strong> Three reviewer rounds produced a Spotlight/Oral-grade paper. Headline regret <span class="sim">0.043</span> &rarr; <span class="sim">0.038</span> with prescriptive mitigation (C.2). Generalizes beyond TS to tabular (D.1). Robust to concept drift (D.2) and pool scale to K=200 (D.3). The theorem was downgraded to a proposition without losing argumentative power. Reviewers' attack surface was reduced systematically. This is the form the real paper should take.
+<strong>Convergence summary.</strong> Three reviewer rounds produced a Spotlight/Oral-grade paper. Headline regret <span class="sim">0.043</span> &rarr; <span class="sim">0.038</span> with prescriptive mitigation (C.2). Generalizes beyond TS to tabular (D.1). Robust to concept drift (D.2) and pool scale to K=200 (D.3). The theorem was removed entirely; the paper carries on empirics alone. Reviewers' attack surface was reduced systematically. This is the form the real paper should take.
 </div>
 
 <!-- ========================================================== -->
